@@ -13,7 +13,7 @@ export default function LoginSuccessPage() {
             localStorage.setItem("token", token);
             router.push("/rooms");
         } else {
-            router.push("/login");
+            router.push("auth/login");
         }
     }, [searchParams, router]);
 

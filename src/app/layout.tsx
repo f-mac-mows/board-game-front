@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "@/components/providers/authProvider";
 
 export const metadata: Metadata = {
   title: "Board Game Online",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="anitialiased selection:bg-blue-500/30">
+      <AuthProvider>
         {children}
+      </AuthProvider>
       </body>
     </html>
   )

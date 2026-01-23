@@ -193,6 +193,7 @@ export default function SignUpPage() {
                         name="nickname"
                         type="text"
                         required
+                        placeholder="닉네임 입력 (2자~16자)"
                         maxLength={16}
                         className={`mt-1 block w-full px-4 py-3 bg-slate-800 border rounded-lg text-white focus:ring-2 transition-all ${
                             errors.nickname ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-blue-500'

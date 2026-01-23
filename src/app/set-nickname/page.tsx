@@ -6,28 +6,46 @@ import api from "@/lib/axios";
 
 export default function SetNicknamePage() {
     const [nickname, setNickname] = useState("");
-    const [error, setError] = useState("");
-    const searchParams = useSearchParams();
+    const [error, setError] = useState({
+        nickname: "",
+    });
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
-    useEffect(() => {
-        const token = searchParams.get("token");
-        if (token) {
-            localStorage.setItem("token", token); // 임시 토큰 저장 (Patch 요청을 위해)
-        } else {
-            router.push("/login");
+    // 유효성 검사 함수
+    const validateField = (name: string, value: string) => {
+        let error = "";
+        if (name === "nickname") {
+            if (value.length < 2) error = "닉네임은 최소 2자 이상입니다.";
+            else if (value.length > 16) error = "닉네임은 최대 16자 이하입니다.";
         }
-    }, [searchParams, router]);
+        setError(prev => ({ ...prev, [name]: error}));
+    };
+
+    const handleChange = ( e: React.ChangeEvent<HTMLInputElement>) => {
+        const {name, value} = e.target;
+        setNickname(value);
+        validateField(name, value);
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (nickname.length < 2 || nickname.length > 16 || error.nickname) return;
+
+        setIsLoading(true);
         try {
             await api.patch("/user/nickname", {nickname});
             router.push("/rooms");
         } catch (err: any) {
-            setError(err.response?.data?.message || "사용할 수 없는 닉네임입니다.");
+            console.error("에러 발생 세부사항:", err.response);
+            setError({nickname: err.response?.data?.message || "사용할 수 없는 닉네임입니다."});
+        } finally {
+            setIsLoading(false);
         }
     };
+
+    const isInvalid = nickname.length < 2 || nickname.length > 16 || error.nickname !== "";
 
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
@@ -38,17 +56,36 @@ export default function SetNicknamePage() {
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <input
-                        type="text"
-                        required
-                        placeholder="닉네임 입력 (2~10자)"
-                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
-                    />
-                    {error && <p className="text-red-500 text-xs">{error}</p>}
-                    <button className="w-full py-3 bg-blue-600 hober:bg-blue-700 text-white font-bold rounded-lg transition-all">
-                        시작하기
+                    <div className="relative">
+                        <input
+                            name="nickname"
+                            type="text"
+                            required
+                            placeholder="닉네임 입력 (2~16자)"
+                            className={`mt-1 block w-full px-4 py-3 bg-slate-800 border rounded-lg text-white focus:ring-2 transition-all ${
+                                error.nickname ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-blue-500'
+                            }`}
+                            value={nickname}
+                            onChange={handleChange}
+                        />
+                        <span className="absolute right-3 top-3.5 text-xs text-slate-500">
+                            {nickname.length}/16
+                        </span>
+                    </div>
+                    {error.nickname && (
+                        <p className="text-red-500 text-xs animate-in fade-in slide-in-from-top-1">
+                            {error.nickname}
+                        </p>
+                    )}
+                    <button 
+                        disabled={isInvalid || isLoading}
+                        className={`w-full py-3 font-bold rounded-lg transition-all ${
+                            isInvalid || isLoading 
+                                ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                    >
+                        {isLoading ? "처리 중..." : "시작하기"}
                     </button>
                 </form>
             </div>

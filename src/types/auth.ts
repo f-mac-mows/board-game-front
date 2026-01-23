@@ -18,8 +18,22 @@ export interface LoginRequest {
     password: string;
 }
 
+export interface AssetInfo {
+    gold: number;
+    point: number;
+}
+
+export interface StatInfo {
+    level: number;
+    mmr: number;
+    wins: number;
+    draws: number;
+    losses: number;
+}
 export interface UserProfileResponse {
     email: string;
     nickname: string;
     createdAt: string; // ISO 8601 string
+    asset: AssetInfo;
+    stat: StatInfo;
 }
