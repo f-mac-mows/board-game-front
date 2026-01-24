@@ -25,6 +25,7 @@ export interface AssetInfo {
 
 export interface StatInfo {
     level: number;
+    exp: number;
     mmr: number;
     wins: number;
     draws: number;
@@ -33,6 +34,7 @@ export interface StatInfo {
 export interface UserProfileResponse {
     email: string;
     nickname: string;
+    profileCompleted: boolean;
     createdAt: string; // ISO 8601 string
     asset: AssetInfo;
     stat: StatInfo;

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/api/auth";
-import { useUserStore } from "@/store/useUserStore";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -13,7 +12,6 @@ export default function LoginPage() {
     const [error, setError] = useState("");
 
     const router = useRouter();
-    const { setUser } = useUserStore();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

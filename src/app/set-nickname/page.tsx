@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import api from "@/lib/axios";
+import { userApi } from "@/api/user";
+import { useUserStore } from "@/store/useUserStore";
 
 export default function SetNicknamePage() {
+    const { setUser } = useUserStore();
     const [nickname, setNickname] = useState("");
     const [error, setError] = useState({
         nickname: "",
@@ -35,8 +37,14 @@ export default function SetNicknamePage() {
 
         setIsLoading(true);
         try {
-            await api.patch("/user/nickname", {nickname});
-            router.push("/rooms");
+            await userApi.updateNickname(nickname);
+
+            const response = await userApi.getMyInfo();
+            
+            setUser(response.data);
+
+            alert("닉네임 설정이 완료되었습니다!");
+            router.push("/");
         } catch (err: any) {
             console.error("에러 발생 세부사항:", err.response);
             setError({nickname: err.response?.data?.message || "사용할 수 없는 닉네임입니다."});

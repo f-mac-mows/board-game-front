@@ -11,7 +11,7 @@ export default function LoginSuccessPage() {
         const token = searchParams.get("token");
         if (token) {
             localStorage.setItem("token", token);
-            router.push("/rooms");
+            router.push("/");
         } else {
             router.push("auth/login");
         }

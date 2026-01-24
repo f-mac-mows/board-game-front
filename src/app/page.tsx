@@ -40,6 +40,9 @@ export default function HomePage() {
             <>
               <div className="flex flex-col items-center gap-2">
                 <div className="px-6 py-3 bg-slate-800 rounded-xl border border-slate-700">
+                  <span className="text-green-400 font-bold">⭐️ {user.nickname}님 환영합니다!</span>
+                </div>
+                <div className="px-6 py-3 bg-slate-800 rounded-xl border border-slate-700">
                   <span className="text-yellow-500 font-bold">💰 {user.asset.gold.toLocaleString()}</span>
                   <span className="mx-2">|</span>
                   <span className="text-blue-400 font-bold">🏆 {user.stat.mmr} MMR</span>

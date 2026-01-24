@@ -14,6 +14,16 @@ export const GAME_TYPE_CONFIG: Record<GameTypeCode, GameTypeDetail> = {
 };
 
 export interface CreateRoomRequest {
+    title: string; // Size 2~8자
+    gameType: GameTypeCode; // NotNull
+}
+
+export interface GameRoom {
+    id: number;
     title: string;
+    hostNickname: string;
     gameType: GameTypeCode;
+    currentPlayers: number;
+    maxPlayers: number;
+    status: "IN_PROGRESS" | "FINISHED";
 }
