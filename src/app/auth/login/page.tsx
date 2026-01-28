@@ -37,7 +37,7 @@ export default function LoginPage() {
 
     const handleGoogleLogin = () => {
         // 백엔드에서 설정한 OAuth2 엔드포인트로 리다이렉트
-        window.location.href = `http://mows-game.test.com:8080/oauth2/authorization/google`;
+        window.location.href = `http://walrung.ddns.net:8080/oauth2/authorization/google`;
     };
 
     return (

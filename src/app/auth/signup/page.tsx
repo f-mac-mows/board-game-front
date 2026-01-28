@@ -113,7 +113,7 @@ export default function SignUpPage() {
                 nickname: formData.nickname,
             });
             alert("회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
-            router.push("/login");
+            router.push("/auth/login");
         } catch (err: any) {
             setMessage({ type: "error", text: err.response?.data?.message || "가입 실패" });
         } finally {
@@ -124,7 +124,7 @@ export default function SignUpPage() {
     // 4. Google OAuth2 로그인 핸들러
     const handleGoogleLogin = () => {
         // 백엔드에서 설정한 OAuth2 엔드포인트로 리다이렉트
-        window.location.href = `http://mows-game.test.com:8080/oauth2/authorization/google`;
+        window.location.href = `http://walrung.ddns.net:8080/oauth2/authorization/google`;
     };
 
     return (

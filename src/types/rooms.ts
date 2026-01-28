@@ -18,12 +18,31 @@ export interface CreateRoomRequest {
     gameType: GameTypeCode; // NotNull
 }
 
-export interface GameRoom {
+export type GameStatus = "WAITING" | "IN_PROGRESS" | "FINISHED";
+
+export interface GameRoomResponse {
     id: number;
     title: string;
-    hostNickname: string;
     gameType: GameTypeCode;
+    hostNickname: string;
     currentPlayers: number;
     maxPlayers: number;
-    status: "IN_PROGRESS" | "FINISHED";
+    isFull: boolean;
+    status: GameStatus;
+    canJoin: boolean;
+    statusMessage: string;
+    createdAt: string;
+}
+
+export interface PlayerInfoResponse {
+    nickname: string;
+    mmr: number | null;
+    ready: boolean;
+    host: boolean;
+}
+
+export interface RoomDetailResponse {
+    roomId: number;
+    title: string;
+    players: PlayerInfoResponse[];
 }

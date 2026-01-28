@@ -1,13 +1,12 @@
-import { Message } from "@stomp/stompjs";
-
 export enum MessageType {
     ENTER = 'ENTER',
     TALK = 'TALK',
-    LEAVE = 'LEAVE'
+    LEAVE = 'LEAVE',
+    START = 'START',
 }
 
 export interface GameMessage {
-    type: Message;
+    type: MessageType;
     roomId: number;
     sender: string;
     message: string;

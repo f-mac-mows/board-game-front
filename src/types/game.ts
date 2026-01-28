@@ -18,7 +18,7 @@ export interface ScoreCard {
 
 // 주사위 롤링 결과 데이터
 export interface DiceStatus {
-    dice: number[]
+    diceValues: number[]
     remainingRolls: number;
     turnNickname: string;
 }

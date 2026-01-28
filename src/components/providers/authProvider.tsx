@@ -29,7 +29,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       } catch (err) {
         clearUser();
         // 비로그인 유저가 보호된 경로 접근 시
-        if (pathname.startsWith("/rooms") || pathname === "/set-nickname") {
+        if (pathname.startsWith("/rooms") || pathname.startsWith("/game") || pathname === "/set-nickname") {
           router.replace("/auth/login");
         }
       } finally {
