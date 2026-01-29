@@ -26,7 +26,7 @@ export interface DiceStatus {
 // 최종 게임 결과 데이터
 export interface GameResult {
     winnerNickname: string;
-    isDraw: boolean;
+    draw: boolean;
     scoreCards: ScoreCard[];
 }
 
