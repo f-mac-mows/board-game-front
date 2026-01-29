@@ -27,7 +27,7 @@ export interface GameRoomResponse {
     hostNickname: string;
     currentPlayers: number;
     maxPlayers: number;
-    isFull: boolean;
+    full: boolean;
     status: GameStatus;
     canJoin: boolean;
     statusMessage: string;

@@ -6,7 +6,7 @@ import SockJS from 'sockjs-client';
 import { Client, IMessage } from '@stomp/stompjs';
 import { useUserStore } from '@/store/useUserStore';
 import { GameMessage } from '@/types/chat';
-import { RoomDetailResponse, PlayerInfoResponse } from '@/types/rooms';
+import { PlayerInfoResponse } from '@/types/rooms';
 import { roomApi } from '@/api/rooms';
 
 export default function GameRoomPage() {
@@ -14,7 +14,7 @@ export default function GameRoomPage() {
     const roomIdStr = params?.id as string;
     const roomId = Number(roomIdStr);
     const router = useRouter();
-    const { user } = useUserStore();
+    const { user, setCurrentRoomId } = useUserStore();
 
     const [messages, setMessages] = useState<GameMessage[]>([]);
     const [input, setInput] = useState("");
@@ -25,49 +25,44 @@ export default function GameRoomPage() {
     const stompClient = useRef<Client | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const canStart = players.length >= 2 && players.every(p => p.host || p.ready);
+    // 유저 상태 및 권한 체크
+    const myStatus = players.find(p => p.nickname === user?.nickname);
+    const isPlayer = !!myStatus;
+    const isHost = myStatus?.host || myStatus?.host; // 서버 필드명에 맞춰 호환
+    
+    // 방장 포함 전원 준비 완료 시 시작 가능
+    const canStart = players.length >= 2 && players.every(p => p.ready || p.ready);
 
-    // 1. 방 정보 초기화 (재시도 로직 추가)
+    // 1. 방 정보 초기화 및 게임 진행 상태 체크
     useEffect(() => {
         if (!roomId || isNaN(roomId)) return;
-
-        let retryCount = 0;
-        const maxRetries = 3;
 
         const initRoom = async () => {
             try {
                 const res = await roomApi.getRoomDetail(roomId);
                 setPlayers(res.data.players);
                 setRoomTitle(res.data.title);
+
             } catch (err) {
-                if (retryCount < maxRetries) {
-                    retryCount++;
-                    console.log(`방 정보 로드 재시도 중... (${retryCount}/${maxRetries})`);
-                    setTimeout(initRoom, 500); // 0.5초 후 다시 시도
-                } else {
-                    console.error("방 정보 로드 최종 실패:", err);
-                    alert("방 정보를 불러올 수 없습니다.");
-                    router.replace("/rooms");
-                }
+                console.error("방 정보 로드 실패:", err);
+                alert("방 정보를 불러올 수 없습니다.");
+                router.replace("/rooms");
             }
         };
 
         initRoom();
     }, [roomId, router]);
 
-    // 2. 소켓 연결
+    // 2. 소켓 연결 및 실시간 동기화
     useEffect(() => {
         if (!roomId || isNaN(roomId) || !user) return;
 
         const socket = new SockJS(`http://walrung.ddns.net:8080/ws-game`);
         const client = new Client({
             webSocketFactory: () => socket,
-            reconnectDelay: 5000, // 연결 끊길 시 5초 후 재연결 시도
-            heartbeatIncoming: 4000,
-            heartbeatOutgoing: 4000,
+            reconnectDelay: 5000,
             onConnect: () => {
-                console.log("WebSocket Connected!");
-                setIsConnected(true); // 연결 완료 상태 기록
+                setIsConnected(true);
 
                 client.subscribe(`/topic/room/${roomId}`, (message: IMessage) => {
                     const data = JSON.parse(message.body);
@@ -75,65 +70,70 @@ export default function GameRoomPage() {
                     if (data.type) setMessages((prev) => [...prev, data]);
 
                     if (data.type === 'START') {
-                            setTimeout(() => {
-                            router.push(`/game/yacht/${roomId}`); 
-                        }, 1500);
+                        setTimeout(() => router.push(`/game/yacht/${roomId}`), 1000);
                     }
                 });
 
-                // 입장 통보
-                client.publish({
-                    destination: '/app/chat/message',
-                    body: JSON.stringify({
-                        type: 'ENTER', roomId: roomId, sender: user.nickname,
-                        message: `${user.nickname}님이 입장하셨습니다.`
-                    })
-                });
+                // 플레이어인 경우에만 입장 통보
+                if (isPlayer) {
+                    client.publish({
+                        destination: '/app/chat/message',
+                        body: JSON.stringify({
+                            type: 'ENTER', roomId: roomId, sender: user.nickname,
+                            message: `${user.nickname}님이 입장하셨습니다.`
+                        })
+                    });
+                }
             },
-            onDisconnect: () => {
-                console.log("WebSocket Disconnected");
-                setIsConnected(false);
-            },
-            onStompError: (frame) => {
-                console.error('STOMP Error:', frame.headers['message']);
-            }
+            onDisconnect: () => setIsConnected(false),
         });
 
         client.activate();
         stompClient.current = client;
 
         return () => {
-            if (stompClient.current) {
-                stompClient.current.deactivate();
-                setIsConnected(false);
-            }
+            if (stompClient.current) stompClient.current.deactivate();
         };
-    }, [roomId, user]);
+    }, [roomId, user, isPlayer]);
 
+    // 3. 채팅 자동 스크롤
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [messages]);
+
+    // --- 핸들러 영역 ---
     const handleLeave = async () => {
         try {
-            await roomApi.leave(roomId);
+            if (isPlayer) {
+                await roomApi.leave(roomId);
+                setCurrentRoomId(null); // AuthProvider 가드 해제
+            }
             router.push('/rooms');
         } catch (err: any) {
             alert("나가기 실패");
         }
-    }
+    };
 
     const handleReady = async () => {
+        if (!isPlayer) return;
         try {
             await roomApi.toggleReady(roomId);
             const res = await roomApi.getRoomDetail(roomId);
-            
-            // 새로운 배열로 복사해서 상태 업데이트 (불변성 유지)
             setPlayers([...res.data.players]); 
         } catch (err: any) {
-            alert("준비 실패");
+            alert("준비 처리 실패");
         }
     };
 
     const handleStart = async () => {
-        try { await roomApi.startGame(roomId); } 
-        catch (err: any) { alert(err.response?.data?.message || "시작 실패"); }
+        if (!isHost) return;
+        try {
+            await roomApi.startGame(roomId);
+        } catch (err: any) {
+            alert(err.response?.data?.message || "시작 실패");
+        }
     };
 
     const sendMessage = () => {
@@ -147,13 +147,16 @@ export default function GameRoomPage() {
         setInput("");
     };
 
-    const isHost = players.find(p => p.nickname === user?.nickname)?.host;
-
     return (
         <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col gap-6">
             <header className="max-w-6xl mx-auto w-full flex justify-between items-center bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                <h1 className="text-2xl font-black text-blue-500 uppercase tracking-widest">{roomTitle || 'Lobby'}</h1>
-                <button onClick={handleLeave} className="px-4 py-2 bg-slate-800 hover:text-red-400 rounded-lg text-xs font-bold">나가기</button>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-black text-blue-500 uppercase tracking-widest">{roomTitle || 'Lobby'}</h1>
+                    {!isPlayer && <span className="text-[10px] text-yellow-500 font-bold italic">SPECTATING MODE</span>}
+                </div>
+                <button onClick={handleLeave} className="px-4 py-2 bg-slate-800 hover:text-red-400 rounded-lg text-xs font-bold">
+                    {isPlayer ? "나가기" : "관전 종료"}
+                </button>
             </header>
 
             <main className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
@@ -161,15 +164,16 @@ export default function GameRoomPage() {
                     <div className="grid grid-cols-2 gap-4 flex-1">
                         {[0, 1, 2, 3].map((idx) => {
                             const p = players[idx];
+                            const isMe = p?.nickname === user?.nickname;
                             return (
-                                <div key={idx} className={`h-44 rounded-3xl border-2 flex flex-col items-center justify-center ${p ? 'bg-slate-900 border-blue-500/30' : 'bg-slate-900/20 border-slate-800 border-dashed'}`}>
+                                <div key={idx} className={`h-44 rounded-3xl border-2 flex flex-col items-center justify-center ${p ? (isMe ? 'bg-slate-900 border-blue-500' : 'bg-slate-900 border-blue-500/30') : 'bg-slate-900/20 border-slate-800 border-dashed'}`}>
                                     {p ? (
                                         <>
-                                            <div className="w-16 h-16 bg-slate-800 rounded-full mb-3 flex items-center justify-center text-2xl">👤</div>
-                                            <div className="font-bold">MMR {p.mmr}</div>
-                                            <span className="font-bold">{p.nickname} {p.host && "👑"}</span>
-                                            <div className={`mt-2 px-4 py-1 rounded-full text-[10px] font-black ${p.ready ? 'bg-green-500 text-black' : 'bg-slate-800 text-slate-500'}`}>
-                                                {(p.host || p.ready) ? 'READY' : 'WAITING'}
+                                            <div className="w-16 h-16 bg-slate-800 rounded-full mb-3 flex items-center justify-center text-2xl shadow-lg">👤</div>
+                                            <div className="font-bold text-xs text-slate-500">MMR {p.mmr}</div>
+                                            <span className="font-bold">{p.nickname} {(p.host) && "👑"}</span>
+                                            <div className={`mt-2 px-4 py-1 rounded-full text-[10px] font-black ${ (p.ready) ? 'bg-green-500 text-black' : 'bg-slate-800 text-slate-500'}`}>
+                                                {(p.ready) ? 'READY' : 'WAITING'}
                                             </div>
                                         </>
                                     ) : <span className="text-slate-800 font-black italic">EMPTY</span>}
@@ -177,35 +181,57 @@ export default function GameRoomPage() {
                             );
                         })}
                     </div>
+                    
+                    {/* 하단 컨트롤 영역: 플레이어일 때만 버튼 노출 */}
                     <div className="flex gap-4">
-                        <button onClick={handleReady} className="flex-1 py-5 bg-green-600 rounded-2xl font-black text-xl hover:bg-green-500">READY</button>
-                        {isHost && (
-                            <button 
-                                onClick={handleStart} 
-                                disabled={!canStart}
-                                className={`flex-1 py-5 rounded-2xl font-black text-xl transition-all ${
-                                    canStart 
-                                        ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/40' 
-                                        : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
-                                }`}
-                            >
-                                {canStart ? 'START GAME' : 'WAITING FOR PLAYERS'}
-                            </button>
+                        {isPlayer ? (
+                            <>
+                                <button onClick={handleReady} className="flex-1 py-5 bg-green-600 rounded-2xl font-black text-xl hover:bg-green-500 transition-colors shadow-lg">
+                                    {myStatus?.ready || myStatus?.ready ? "CANCEL READY" : "READY"}
+                                </button>
+                                {isHost && (
+                                    <button 
+                                        onClick={handleStart} 
+                                        disabled={!canStart}
+                                        className={`flex-1 py-5 rounded-2xl font-black text-xl transition-all ${
+                                            canStart 
+                                                ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/40' 
+                                                : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                                        }`}
+                                    >
+                                        {canStart ? 'START GAME' : 'WAITING FOR READY'}
+                                    </button>
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex-1 py-5 bg-slate-900/50 border border-slate-800 rounded-2xl text-center font-bold text-slate-500">
+                                관전 중에는 조작할 수 없습니다.
+                            </div>
                         )}
                     </div>
                 </div>
 
+                {/* 채팅 영역 */}
                 <div className="bg-slate-900 rounded-3xl border border-slate-800 flex flex-col h-[500px] overflow-hidden">
-                    <div className="flex-1 p-5 overflow-y-auto space-y-4" ref={scrollRef}>
+                    <div className="flex-1 p-5 overflow-y-auto space-y-4 scroll-smooth" ref={scrollRef}>
                         {messages.map((m, i) => (
                             <div key={i} className={`flex flex-col ${m.type === 'TALK' ? (m.sender === user?.nickname ? 'items-end' : 'items-start') : 'items-center'}`}>
-                                <div className={`px-4 py-2 rounded-2xl text-sm ${m.type === 'TALK' ? (m.sender === user?.nickname ? 'bg-blue-600' : 'bg-slate-800') : 'text-slate-500 text-xs'}`}>{m.message}</div>
+                                {m.type === 'TALK' && m.sender !== user?.nickname && <span className="text-[10px] text-slate-500 mb-1 ml-1">{m.sender}</span>}
+                                <div className={`px-4 py-2 rounded-2xl text-sm ${m.type === 'TALK' ? (m.sender === user?.nickname ? 'bg-blue-600' : 'bg-slate-800') : 'text-slate-500 text-xs italic'}`}>
+                                    {m.message}
+                                </div>
                             </div>
                         ))}
                     </div>
                     <div className="p-4 bg-slate-950/50 flex gap-2">
-                        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 outline-none focus:border-blue-500" placeholder="채팅 입력..."/>
-                        <button onClick={sendMessage} className="px-5 bg-blue-600 rounded-xl font-bold">전송</button>
+                        <input 
+                            value={input} 
+                            onChange={e => setInput(e.target.value)} 
+                            onKeyDown={e => e.key === 'Enter' && sendMessage()} 
+                            className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all" 
+                            placeholder="메시지를 입력하세요..."
+                        />
+                        <button onClick={sendMessage} className="px-5 bg-blue-600 rounded-xl font-bold hover:bg-blue-500 transition-colors">전송</button>
                     </div>
                 </div>
             </main>

@@ -1,4 +1,3 @@
-// components/providers/AuthProvider.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,7 +6,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { userApi } from "@/api/user";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { user, setUser, clearUser } = useUserStore();
+  const { setUser, clearUser, setCurrentRoomId } = useUserStore();
   const router = useRouter();
   const pathname = usePathname();
   const [isInitialized, setIsInitialized] = useState(false);
@@ -15,20 +14,43 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const { data } = await userApi.getMyInfo();
+        const { data } = await userApi.getMyInfo(); 
         setUser(data);
-        
-        // 닉네임 미설정자 강제 이동
+        setCurrentRoomId(data.activeRoomId);
+
+        const activeRoomId = data.activeRoomId;
+
+        // 1. 프로필 미설정자 가드
         if (!data.profileCompleted && pathname !== "/set-nickname") {
-          router.replace("/set-nickname");
-        } 
-        // 설정 완료자가 다시 접근 시 차단
-        else if (data.profileCompleted && pathname === "/set-nickname") {
-          router.replace("/");
+          return router.replace("/set-nickname");
         }
+        if (data.profileCompleted && pathname === "/set-nickname") {
+          return router.replace("/");
+        }
+
+        // 2. 이탈 방지 가드 (참여 중인 방이 있을 때만 발동)
+        if (activeRoomId) {
+          // 현재 URL에서 방 ID 추출
+          const roomMatch = pathname.match(/\/(?:rooms|game\/yacht)\/(\d+)/);
+          const targetId = roomMatch ? Number(roomMatch[1]) : null;
+
+          // [핵심 조건]
+          // 1. 참여 중인 방이 있는데, 아예 방과 관련 없는 로비(/rooms)로 나가려 할 때
+          // 2. 혹은 다른 방 ID(targetId)로 접근하려 할 때
+          const isLeaving = pathname === "/rooms";
+          const isAccessingOtherRoom = targetId !== null && targetId !== activeRoomId;
+
+          if (isLeaving || isAccessingOtherRoom) {
+            alert("이미 참여 중인 게임이 있습니다. 해당 방으로 복귀합니다.");
+            return router.replace(`/rooms/${activeRoomId}`);
+          }
+        }
+        
+        // 참여 중인 방(activeRoomId)이 없는 유저는 
+        // 자유롭게 /rooms/[id]나 /game/yacht/[id]에 접근하여 관전할 수 있음
+
       } catch (err) {
         clearUser();
-        // 비로그인 유저가 보호된 경로 접근 시
         if (pathname.startsWith("/rooms") || pathname.startsWith("/game") || pathname === "/set-nickname") {
           router.replace("/auth/login");
         }
@@ -38,9 +60,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     };
 
     initAuth();
-  }, [pathname, setUser, clearUser, router]); // pathname이 바뀔 때마다 체크
+  }, [pathname, setUser, clearUser, setCurrentRoomId, router]);
 
-  if (!isInitialized) return null; // 초기 인증 체크 전까지는 아무것도 안 보여줌 (깜빡임 방지)
+  if (!isInitialized) return null;
 
   return <>{children}</>;
 }

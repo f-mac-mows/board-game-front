@@ -38,4 +38,5 @@ export interface UserProfileResponse {
     createdAt: string; // ISO 8601 string
     asset: AssetInfo;
     stat: StatInfo;
+    activeRoomId: number;
 }
