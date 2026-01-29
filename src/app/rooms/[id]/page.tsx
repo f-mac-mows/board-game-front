@@ -70,7 +70,8 @@ export default function GameRoomPage() {
                     if (data.type) setMessages((prev) => [...prev, data]);
 
                     if (data.type === 'START') {
-                        setTimeout(() => router.push(`/game/yacht/${roomId}`), 1000);
+                        const newGameId = data.message;
+                        setTimeout(() => router.push(`/game/yacht/${newGameId}`), 1000);
                     }
                 });
 
