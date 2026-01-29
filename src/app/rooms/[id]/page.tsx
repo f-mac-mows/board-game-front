@@ -40,16 +40,22 @@ export default function GameRoomPage() {
         const initRoom = async () => {
             try {
                 const res = await roomApi.getRoomDetail(roomId);
+                
+                // [추가] 재접속 시 핵심 로직: 방 상태가 'IN_PROGRESS'라면 게임판으로 즉시 이동
+                if (res.data.status === "IN_PROGRESS" && res.data.currentGameId) {
+                    console.log("게임이 진행 중입니다. 게임 페이지로 이동합니다.");
+                    return router.replace(`/game/yacht/${res.data.currentGameId}`);
+                }
+
                 setPlayers(res.data.players);
                 setRoomTitle(res.data.title);
 
             } catch (err) {
                 console.error("방 정보 로드 실패:", err);
-                alert("방 정보를 불러올 수 없습니다.");
                 router.replace("/rooms");
             }
         };
-
+        
         initRoom();
     }, [roomId, router]);
 

@@ -44,5 +44,7 @@ export interface PlayerInfoResponse {
 export interface RoomDetailResponse {
     roomId: number;
     title: string;
+    status: GameStatus;
+    currentGameId: number;
     players: PlayerInfoResponse[];
 }
