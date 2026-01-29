@@ -28,30 +28,28 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           return router.replace("/");
         }
 
-        // 2. 이탈 방지 가드 (참여 중인 방이 있을 때만 발동)
+        // 2. 이탈 방지 가드 강화
         if (activeRoomId) {
-          // 현재 URL에서 방 ID 추출
-          const roomMatch = pathname.match(/\/(?:rooms|game\/yacht)\/(\d+)/);
-          const targetId = roomMatch ? Number(roomMatch[1]) : null;
+          // 게임 페이지(/game/yacht/...)에 있을 때는 가드를 완전히 풉니다.
+          // 방 ID와 게임 ID가 다르기 때문에, 여기서 검사하면 100% 튕깁니다.
+          const isGamePage = pathname.startsWith("/game/yacht");
+          
+          if (!isGamePage) {
+            const roomMatch = pathname.match(/\/rooms\/(\d+)/);
+            const targetRoomId = roomMatch ? Number(roomMatch[1]) : null;
 
-          // [핵심 조건]
-          // 1. 참여 중인 방이 있는데, 아예 방과 관련 없는 로비(/rooms)로 나가려 할 때
-          // 2. 혹은 다른 방 ID(targetId)로 접근하려 할 때
-          const isLeaving = pathname === "/rooms";
-          const isAccessingOtherRoom = targetId !== null && targetId !== activeRoomId;
-
-          if (isLeaving || isAccessingOtherRoom) {
-            alert("이미 참여 중인 게임이 있습니다. 해당 방으로 복귀합니다.");
-            return router.replace(`/rooms/${activeRoomId}`);
+            // 로비 목록(/rooms)으로 가려고 하거나, 내가 참여한 방이 아닌 다른 방으로 갈 때만 복귀
+            if (pathname === "/rooms" || (targetRoomId && targetRoomId !== activeRoomId)) {
+              alert("참여 중인 방으로 복귀합니다.");
+              return router.replace(`/rooms/${activeRoomId}`);
+            }
           }
         }
         
-        // 참여 중인 방(activeRoomId)이 없는 유저는 
-        // 자유롭게 /rooms/[id]나 /game/yacht/[id]에 접근하여 관전할 수 있음
-
       } catch (err) {
         clearUser();
-        if (pathname.startsWith("/rooms") || pathname.startsWith("/game") || pathname === "/set-nickname") {
+        const protectedPaths = ["/rooms", "/game", "/set-nickname"];
+        if (protectedPaths.some(path => pathname.startsWith(path))) {
           router.replace("/auth/login");
         }
       } finally {

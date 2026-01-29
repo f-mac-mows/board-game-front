@@ -78,7 +78,6 @@ export default function YachtGamePage() {
                 break;
 
             case 'GAME_OVER':
-                // 백엔드에서 보낸 YachtResultResponse(winnerNickname, isDraw 등) 수신
                 setWinnerData(event.data);
                 setIsGameOver(true);
                 break;
