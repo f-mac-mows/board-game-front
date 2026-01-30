@@ -7,7 +7,7 @@ import FloatingDice from '@/components/home/FloatingDice';
 import { authApi } from '@/api/auth';
 
 export default function HomePage() {
-  const { user } = useUserStore();
+  const { user, clearUser } = useUserStore();
   const [mounted, setMounted] = useState(false);
 
   const handleLogout = async () => {
@@ -16,8 +16,7 @@ export default function HomePage() {
       } catch (err) {
           console.error("서버 로그아웃 통신 실패 (이미 만료되었을 수 있음):", err);
       } finally {
-          useUserStore.getState().clearUser();
-          localStorage.clear();
+          clearUser();
           window.location.href = "/";
       }
   };

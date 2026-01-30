@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/api/auth";
+import { useUserStore } from "@/store/useUserStore";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -12,6 +13,7 @@ export default function LoginPage() {
     const [error, setError] = useState("");
 
     const router = useRouter();
+    const { setUser } = useUserStore();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,14 +21,10 @@ export default function LoginPage() {
         setError("");
 
         try {
-            // 로그인 API 호출
             const response = await authApi.login({ email, password });
-            const { token } = response.data;
+            
+            setUser(response.data); 
 
-            // 토큰 저장 (로컬 스토리지)
-            localStorage.setItem("token", token);
-
-            // 페이지 이동
             router.push("/");
         } catch (err: any) {
             setError(err.response?.data?.message || "로그인에 실패했습니다. 다시 시도해주세요.");

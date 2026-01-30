@@ -1,4 +1,3 @@
-// store/useUserStore.ts
 import { UserProfileResponse } from '@/types/auth';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -16,21 +15,34 @@ export const useUserStore = create<UserState>()(
         (set) => ({
             user: null,
             currentRoomId: null,
-            setUser: (user) => set({ user }),
-            setCurrentRoomId: (roomId) => set({ currentRoomId: roomId}),
+
+            // 로그인 시 유저 정보와 현재 참여 중인 방 ID를 동시에 업데이트
+            setUser: (user) => set({ 
+                user, 
+                currentRoomId: user.activeRoomId // DTO의 값을 스토어에 반영
+            }),
+
+            setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
+
             clearUser: () => {
-                // 1. Zustand 상태 초기화
+                // Zustand 상태 초기화
                 set({ user: null, currentRoomId: null });
 
-                // 2. 쿠키 삭제 (Domain 설정 확인 필수)
-                // 브라우저 쿠키 목록에서 확인하신 .walrung.ddns.net 도메인을 명시해야 삭제됩니다.
+                // 쿠키 삭제
                 const deleteCookie = (name: string) => {
-                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.walrung.ddns.net;`;
-                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                    const domains = ['.walrung.ddns.net', 'walrung.ddns.net', ''];
+                    domains.forEach(domain => {
+                        const domainPart = domain ? `domain=${domain};` : '';
+                        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; ${domainPart}`;
+                    });
                 };
 
                 deleteCookie('accessToken');
+                deleteCookie('refreshToken');
                 deleteCookie('JSESSIONID');
+                
+                // 로컬 스토리지 강제 초기화
+                localStorage.removeItem('mows-user-storage');
             },
         }),
         {

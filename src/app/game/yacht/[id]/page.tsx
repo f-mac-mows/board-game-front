@@ -41,7 +41,7 @@ export default function YachtGamePage() {
     useEffect(() => {
         syncGameStatus();
 
-        const socket = new SockJS(`http://walrung.ddns.net:8080/ws-game`);
+        const socket = new SockJS(`https://walrung.ddns.net/ws-game`);
         const client = Stomp.over(socket);
         stompClient.current = client;
 
