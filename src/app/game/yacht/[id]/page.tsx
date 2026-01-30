@@ -89,10 +89,9 @@ export default function YachtGamePage() {
                 break;
 
             case 'TURN_CHANGED':
-                syncGameStatus();
                 resetTurnState(event.nextTurn);
+                syncGameStatus();
                 break;
-
             case 'GAME_OVER':
                 setWinnerData(event.data);
                 setIsGameOver(true);
