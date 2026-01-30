@@ -39,6 +39,8 @@ export default function YachtGamePage() {
 
     // --- 소켓 연결 ---
     useEffect(() => {
+        syncGameStatus();
+
         const socket = new SockJS(`http://walrung.ddns.net:8080/ws-game`);
         const client = Stomp.over(socket);
         stompClient.current = client;
@@ -48,6 +50,7 @@ export default function YachtGamePage() {
                 const event: YachtGameEvent = JSON.parse(message.body);
                 handleGameEvent(event);
             });
+            
             syncGameStatus();
         });
 
@@ -114,21 +117,22 @@ export default function YachtGamePage() {
     const syncGameStatus = async () => {
         try {
             const res = await yachtApi.syncGame(gameId);
-            
-            // 서버에서 온 timerSeconds가 0이거나 없을 때, 
-            // 게임이 진행 중이라면 기본값 45을 유지하도록 보정
-            if (res.data.timerSeconds && Number(res.data.remainingSeconds) > 0) {
-                setTimer(Number(res.data.timerSeconds));
-            } else {
-                setTimer(45); // 데이터가 없거나 0이면 기본 45초 세팅
+            const { status, scoreCards } = res.data;
+
+            // 1. 점수판 즉시 복구
+            if (scoreCards) {
+                setScoreCards(scoreCards);
             }
 
-            if (res.data.lastDice) setDice(res.data.lastDice.split(',').map(Number));
-            if (res.data.remaining) setRemainingRolls(Number(res.data.remaining));
-            if (res.data.turn) setCurrentTurn(res.data.turn);
+            // 2. 게임 상태 복구
+            if (status) {
+                if (status.timerSeconds) setTimer(Number(status.timerSeconds));
+                if (status.lastDice) setDice(status.lastDice.split(',').map(Number));
+                if (status.remaining) setRemainingRolls(Number(status.remaining));
+                if (status.turn) setCurrentTurn(status.turn);
+            }
         } catch (err) {
             console.error("동기화 실패:", err);
-            setTimer(45);
         }
     };
 

@@ -39,5 +39,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ssh -L 0.0.0.0:8080:localhost:8080 mows@192.168.64.2
 
 ## TODO
-1. 웹소켓 종료시 시작되는 redis 재접속시 동기화 하고 UI 바로바로 업데이트 해야 함. alert도 지워야지 ㅇㅇ.
 6. 사운드 추가
+99. 서렌을 도입할지 고민x
