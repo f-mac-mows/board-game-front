@@ -1,11 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox, Circle, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 
-// --- 숫자별 회전 각도 정의 ---
 const TARGET_ROTATIONS: Record<number, [number, number, number]> = {
   1: [0, 0, 0],              
   6: [0, Math.PI, 0],        
@@ -18,7 +17,6 @@ const TARGET_ROTATIONS: Record<number, [number, number, number]> = {
 const DOT_GAP = 0.8;
 const FACE_OFFSET = 1.76;
 
-// --- 눈금 컴포넌트 (Keep 상태에 따라 색상 반전) ---
 function DiceFace({ num, isKeep }: { num: number; isKeep: boolean }) {
   const positions: Record<number, [number, number][]> = {
     1: [[0, 0]],
@@ -29,7 +27,6 @@ function DiceFace({ num, isKeep }: { num: number; isKeep: boolean }) {
     6: [[-DOT_GAP, DOT_GAP], [DOT_GAP, DOT_GAP], [-DOT_GAP, 0], [DOT_GAP, 0], [-DOT_GAP, -DOT_GAP], [DOT_GAP, -DOT_GAP]],
   };
 
-  // 1은 빨간색 유지, 나머지는 Keep일 때 흰색으로 변경하여 대비 상승
   const dotColor = num === 1 ? "#ff4d4d" : (isKeep ? "#ffffff" : "#1e293b");
 
   return (
@@ -50,7 +47,6 @@ function DiceFace({ num, isKeep }: { num: number; isKeep: boolean }) {
   );
 }
 
-// --- 메인 주사위 메쉬 로직 ---
 function DiceMesh({ value, isRolling, isKeep }: { value: number; isRolling: boolean; isKeep: boolean }) {
   const groupRef = useRef<THREE.Group>(null!);
 
@@ -66,7 +62,6 @@ function DiceMesh({ value, isRolling, isKeep }: { value: number; isRolling: bool
       groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, target[2], 0.15);
     }
 
-    // Keep 상태일 때 부드럽게 공중 부양
     if (isKeep) {
       groupRef.current.position.y = THREE.MathUtils.lerp(
         groupRef.current.position.y, 
@@ -85,7 +80,6 @@ function DiceMesh({ value, isRolling, isKeep }: { value: number; isRolling: bool
           color={isKeep ? "#3b82f6" : "#ffffff"} 
           roughness={isKeep ? 0.05 : 0.1} 
           metalness={isKeep ? 0.1 : 0.05}
-          // 반투명 설정: Keep일 때 보석 같은 느낌
           transmission={isKeep ? 0.5 : 0} 
           thickness={1.5}
           transparent={true}
@@ -94,8 +88,6 @@ function DiceMesh({ value, isRolling, isKeep }: { value: number; isRolling: bool
           emissiveIntensity={isKeep ? 0.5 : 0}
         />
       </RoundedBox>
-      
-      {/* 각 면 배치 */}
       <group position={[0, 0, FACE_OFFSET]}><DiceFace num={1} isKeep={isKeep} /></group>
       <group position={[0, 0, -FACE_OFFSET]} rotation={[0, Math.PI, 0]}><DiceFace num={6} isKeep={isKeep} /></group>
       <group position={[FACE_OFFSET, 0, 0]} rotation={[0, Math.PI / 2, 0]}><DiceFace num={3} isKeep={isKeep} /></group>
@@ -106,7 +98,6 @@ function DiceMesh({ value, isRolling, isKeep }: { value: number; isRolling: bool
   );
 }
 
-// --- 최종 Export 컴포넌트 ---
 interface DiceProps {
   value: number | string;
   isRolling: boolean;
@@ -116,38 +107,41 @@ interface DiceProps {
 
 export default function Dice({ value, isRolling, isKeep, onClick }: DiceProps) {
   const numValue = typeof value === 'number' ? value : 1;
+  const [cameraZ, setCameraZ] = useState(9);
+
+  // 모바일 대응: 화면 크기에 따라 카메라 거리 조절
+  useEffect(() => {
+    const handleResize = () => {
+      setCameraZ(window.innerWidth < 768 ? 13 : 9);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div className="relative group w-24 h-24 lg:w-32 lg:h-32 select-none">
-      <div 
-        className="w-full h-full cursor-pointer touch-none"
-        onClick={onClick}
-      >
+    <div className="relative group w-16 h-16 sm:w-20 sm:h-20 lg:w-32 lg:h-32 select-none">
+      <div className="w-full h-full cursor-pointer touch-none" onClick={onClick}>
         <Canvas gl={{ antialias: true, alpha: true }}>
-          <PerspectiveCamera makeDefault position={[0, 0, 9]} fov={35} />
+          <PerspectiveCamera makeDefault position={[0, 0, cameraZ]} fov={35} />
           <ambientLight intensity={1.2} />
           <pointLight position={[10, 10, 10]} intensity={1.5} />
-          <spotLight position={[-10, 10, 10]} angle={0.2} penumbra={1} intensity={2} />
-          
           <DiceMesh value={numValue} isRolling={isRolling} isKeep={isKeep} />
         </Canvas>
       </div>
 
-      {/* 상단 KEEP 라벨 (애니메이션 추가) */}
       {isKeep && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 pointer-events-none animate-in zoom-in duration-300 z-20">
-          <span className="text-[10px] bg-blue-600 text-white px-3 py-0.5 rounded-full font-black shadow-[0_0_10px_rgba(37,99,235,0.5)] uppercase tracking-tighter">
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-20">
+          <span className="text-[8px] lg:text-[10px] bg-blue-600 text-white px-2 lg:px-3 py-0.5 rounded-full font-black shadow-lg uppercase">
             KEEP
           </span>
         </div>
       )}
 
-      {/* 바닥 그림자: 공중 부양 시 작아지도록 처리 */}
       <div className={`
-        absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-2 
-        bg-black/30 rounded-[100%] blur-md transition-all duration-500 pointer-events-none
-        ${isKeep ? "scale-50 opacity-10 translate-y-4" : "scale-100 opacity-40"}
-        ${isRolling && !isKeep ? "animate-pulse" : ""}
+        absolute bottom-0 left-1/2 -translate-x-1/2 w-10 lg:w-14 h-1 
+        bg-black/30 rounded-[100%] blur-md transition-all duration-500
+        ${isKeep ? "scale-50 opacity-10 translate-y-2" : "scale-100 opacity-40"}
       `} />
     </div>
   );

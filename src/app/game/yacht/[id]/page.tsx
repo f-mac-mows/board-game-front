@@ -254,8 +254,8 @@ export default function YachtGamePage() {
                     </div>
                 </header>
 
-                <main className="bg-slate-900/40 flex-1 rounded-3xl border-2 border-slate-800 border-dashed flex flex-col items-center justify-center gap-12 p-12">
-                    <div className="flex gap-4 lg:gap-6">
+                <main className="bg-slate-900/40 flex-1 rounded-3xl border-2 border-slate-800 border-dashed flex flex-col items-center justify-center gap-6 lg:gap-12 p-4 lg:p-12">
+                    <div className="flex gap-1.5 sm:gap-4 lg:gap-6 justify-center w-full max-w-full">
                         {dice.map((value, idx) => (
                             <Dice
                                 key={idx}
@@ -270,7 +270,7 @@ export default function YachtGamePage() {
                     <button
                         onClick={handleRollDice}
                         disabled={!isMyTurn || remainingRolls === 0 || isRolling}
-                        className="group relative px-16 py-5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 rounded-2xl font-black text-2xl transition-all shadow-xl disabled:shadow-none overflow-hidden"
+                        className="group relative px-10 py-4 lg:px-16 lg:py-5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 rounded-2xl font-black text-xl lg:text-2xl transition-all shadow-xl overflow-hidden"
                     >
                         <span className="relative z-10">{isRolling ? "ROLLING..." : "ROLL DICE"}</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />

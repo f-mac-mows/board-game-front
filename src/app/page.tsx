@@ -4,10 +4,23 @@ import { useEffect, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import Link from 'next/link';
 import FloatingDice from '@/components/home/FloatingDice';
+import { authApi } from '@/api/auth';
 
 export default function HomePage() {
   const { user } = useUserStore();
   const [mounted, setMounted] = useState(false);
+
+  const handleLogout = async () => {
+      try {
+          await authApi.logout(); 
+      } catch (err) {
+          console.error("서버 로그아웃 통신 실패 (이미 만료되었을 수 있음):", err);
+      } finally {
+          useUserStore.getState().clearUser();
+          localStorage.clear();
+          window.location.href = "/";
+      }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -58,7 +71,7 @@ export default function HomePage() {
                   게임 로비 입장
                 </Link>
                 <button 
-                  onClick={() => useUserStore.getState().clearUser()}
+                  onClick={handleLogout}
                   className="px-6 py-4 bg-slate-800 hover:bg-slate-700 rounded-full text-sm font-medium transition-colors"
                 >
                   로그아웃
