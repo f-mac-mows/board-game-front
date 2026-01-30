@@ -42,8 +42,6 @@ export default function SetNicknamePage() {
             const response = await userApi.getMyInfo();
             
             setUser(response.data);
-
-            alert("닉네임 설정이 완료되었습니다!");
             router.push("/");
         } catch (err: any) {
             console.error("에러 발생 세부사항:", err.response);

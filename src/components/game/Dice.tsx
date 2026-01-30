@@ -11,8 +11,8 @@ const TARGET_ROTATIONS: Record<number, [number, number, number]> = {
   6: [0, Math.PI, 0],        
   3: [0, -Math.PI / 2, 0],   
   4: [0, Math.PI / 2, 0],    
-  5: [-Math.PI / 2, 0, 0],   
-  2: [Math.PI / 2, 0, 0],    
+  2: [-Math.PI / 2, 0, 0],
+  5: [Math.PI / 2, 0, 0],
 };
 
 const DOT_GAP = 0.8;

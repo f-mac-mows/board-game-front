@@ -89,7 +89,7 @@ export default function YachtGamePage() {
                 break;
 
             case 'TURN_CHANGED':
-                alert(event.data);
+                syncGameStatus();
                 resetTurnState(event.nextTurn);
                 break;
 
