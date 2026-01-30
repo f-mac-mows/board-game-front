@@ -39,5 +39,10 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ssh -L 0.0.0.0:8080:localhost:8080 mows@192.168.64.2
 
 ## TODO
-6. 사운드 추가
-99. 서렌을 도입할지 고민x
+점수판 가독성
+주사위 컨트롤
+사운드 추가
+서렌을 도입할지 고민중
+
+## 요청
+루미큐브
