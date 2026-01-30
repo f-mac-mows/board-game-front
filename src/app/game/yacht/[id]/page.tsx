@@ -24,6 +24,8 @@ export default function YachtGamePage() {
     const { user } = useUserStore();
     const stompClient = useRef<CompatClient | null>(null);
 
+    const [originalRoomId, setOriginalRoomId] = useState<number | null>(null);
+
     // --- 게임 상태 관리 ---
     const [dice, setDice] = useState<number[]>([1, 1, 1, 1, 1]);
     const [keepIndices, setKeepIndices] = useState<number[]>([]);
@@ -32,7 +34,7 @@ export default function YachtGamePage() {
     const [scoreCards, setScoreCards] = useState<ScoreCard[]>([]);
     const [isGameOver, setIsGameOver] = useState(false);
     const [winnerData, setWinnerData] = useState<GameResult | null>(null);
-    const [timer, setTimer] = useState(30);
+    const [timer, setTimer] = useState(45);
     const [isRolling, setIsRolling] = useState(false);
 
     // --- 소켓 연결 ---
@@ -50,13 +52,24 @@ export default function YachtGamePage() {
         });
 
         return () => {
-            if (stompClient.current) stompClient.current.disconnect();
+            if (stompClient.current) stompClient.current.deactivate();
         };
     }, [gameId]);
 
     // --- 이벤트 핸들러 ---
-    const handleGameEvent = useCallback((event: YachtGameEvent) => {
+    const handleGameEvent = (event: YachtGameEvent) => {
+            if (event.remainingSeconds !== undefined) {
+            setTimer(event.remainingSeconds);
+        }
         switch (event.type) {
+            case 'KEEP_UPDATED':
+                // 상대방이 보낸 Keep 상태를 내 화면에 반영
+                // (내가 보낸 이벤트가 다시 올 수도 있으므로 sender 체크 가능)
+                if (event.sender !== user?.nickname) {
+                    setKeepIndices(event.keepIndices);
+                }
+                break;
+
             case 'DICE_ROLLED':
                 setIsRolling(true);
                 setTimeout(() => {
@@ -80,19 +93,42 @@ export default function YachtGamePage() {
             case 'GAME_OVER':
                 setWinnerData(event.data);
                 setIsGameOver(true);
+                if (event.roomId) setOriginalRoomId(event.roomId);
                 break;
         }
-    }, []);
+    };
+
+    useEffect(() => {
+        if (isGameOver) return;
+
+        const interval = setInterval(() => {
+            setTimer((prev) => {
+                if (prev <= 0) return 0; // 0초에서 멈춤 (서버의 TURN_CHANGED 대기)
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [isGameOver]);
 
     const syncGameStatus = async () => {
         try {
             const res = await yachtApi.syncGame(gameId);
+            
+            // 서버에서 온 timerSeconds가 0이거나 없을 때, 
+            // 게임이 진행 중이라면 기본값 45을 유지하도록 보정
+            if (res.data.timerSeconds && Number(res.data.remainingSeconds) > 0) {
+                setTimer(Number(res.data.timerSeconds));
+            } else {
+                setTimer(45); // 데이터가 없거나 0이면 기본 45초 세팅
+            }
+
             if (res.data.lastDice) setDice(res.data.lastDice.split(',').map(Number));
             if (res.data.remaining) setRemainingRolls(Number(res.data.remaining));
             if (res.data.turn) setCurrentTurn(res.data.turn);
-            // 초기 점수판 데이터 로드 로직이 필요하다면 여기에 추가
         } catch (err) {
             console.error("동기화 실패:", err);
+            setTimer(45);
         }
     };
 
@@ -101,7 +137,7 @@ export default function YachtGamePage() {
         setRemainingRolls(3);
         setKeepIndices([]);
         setDice([1, 1, 1, 1, 1]);
-        setTimer(30);
+        setTimer(45);
     };
 
     // --- 액션 함수 ---
@@ -159,10 +195,33 @@ export default function YachtGamePage() {
         };
     };
 
+    const handleToggleKeep = async (idx: number) => {
+        // 제어: 내 턴이 아니거나, 이미 3번 다 굴렸거나, 굴리는 중이면 클릭 무시
+        if (!isMyTurn || remainingRolls === 3 || remainingRolls === 0 || isRolling) return;
+
+        // 1. 로컬 상태 즉시 업데이트 (사용자 경험을 위해)
+        const newIndices = keepIndices.includes(idx)
+            ? keepIndices.filter(i => i !== idx)
+            : [...keepIndices, idx];
+        
+        setKeepIndices(newIndices);
+
+        // 2. 서버에 Keep 상태 전송 (상대방에게 브로드캐스트 요청)
+        try {
+            await yachtApi.updateKeep(gameId, newIndices);
+        } catch (err) {
+            console.error("Keep 전송 실패:", err);
+        }
+    };
+
     const myBonus = getBonusProgress();
 
     const handleReturnToLobby = async () => {
-        router.push(`/rooms/${gameId}`);
+        if (originalRoomId) {
+        router.push(`/rooms/${originalRoomId}`);
+        } else {
+            router.push('/rooms');
+        }
     };
     
     return (
@@ -180,7 +239,8 @@ export default function YachtGamePage() {
                         <div className="text-center">
                             <p className="text-slate-500 text-xs font-bold uppercase">Time</p>
                             <p className={`text-2xl font-mono font-bold ${timer < 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
-                                00:{timer < 10 ? `0${timer}` : timer}
+                                {/* timer가 0이고 아직 데이터를 불러오는 중이라면 45으로 표시 */}
+                                00:{(timer === 0 && !isGameOver) ? "45" : (timer < 10 ? `0${timer}` : timer)}
                             </p>
                         </div>
                         <div className="text-center">
@@ -198,9 +258,7 @@ export default function YachtGamePage() {
                                 value={value}
                                 isRolling={isRolling}
                                 isKeep={keepIndices.includes(idx)}
-                                onClick={() => isMyTurn && !isRolling && setKeepIndices(prev => 
-                                    prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
-                                )}
+                                onClick={() => handleToggleKeep(idx)}
                             />
                         ))}
                     </div>
@@ -227,8 +285,8 @@ export default function YachtGamePage() {
                     {/* 카테고리 헤더 */}
                     <div className="grid grid-cols-3 gap-2 text-[10px] font-bold text-slate-500 mb-4 px-2">
                         <span>CATEGORY</span>
-                        <span className="text-center">YOU</span>
-                        <span className="text-center">OPPONENT</span>
+                        <span className="text-center">{scoreCards.find(c => c.nickname === user?.nickname)?.nickname}</span>
+                        <span className="text-center">{scoreCards.find(c => c.nickname !== user?.nickname)?.nickname}</span>
                     </div>
 
                     {/* 점수 항목들 (Ones ~ Sixes 이후에 보너스 바 삽입) */}
@@ -245,17 +303,27 @@ export default function YachtGamePage() {
                         const row = (
                             <div key={cat} className="grid grid-cols-3 gap-2 py-1 items-center group">
                                 <span className="text-xs text-slate-400 font-medium pl-2">{CategoryLabel[cat]}</span>
+                                
                                 <button
                                     disabled={!isMyTurn || isFilled || remainingRolls === 3 || isRolling}
                                     onClick={() => handleRecordScore(cat)}
-                                    className={`py-2 rounded-xl text-sm font-mono font-bold transition-all border
-                                        ${isFilled ? 'bg-slate-950 border-transparent text-white' : 
-                                          isMyTurn && remainingRolls < 3 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 
-                                          'bg-slate-950 border-slate-800 text-slate-700'}`}
+                                    className={`
+                                        h-9 flex items-center justify-center rounded-xl text-sm font-mono font-bold transition-all border
+                                        
+                                        ${isFilled 
+                                            ? 'bg-slate-950 border-transparent text-white' 
+                                            : isMyTurn && remainingRolls < 3 
+                                                ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400 cursor-pointer shadow-lg shadow-blue-500/20' 
+                                                : 'bg-slate-950 border-slate-800 text-slate-700'
+                                        }
+                                        
+                                        ${(!isFilled && isMyTurn && remainingRolls < 3 && !isRolling) ? 'hover:scale-[1.02] active:scale-95' : ''}
+                                    `}
                                 >
                                     {isFilled ? myScore : (isMyTurn && remainingRolls < 3 ? previewScore : '')}
                                 </button>
-                                <div className="py-2 rounded-xl text-sm font-mono font-bold text-center bg-slate-950/30 text-slate-500">
+
+                                <div className="h-9 flex items-center justify-center rounded-xl text-sm font-mono font-bold bg-slate-950/30 text-slate-500 border border-transparent">
                                     {opScore ?? ''}
                                 </div>
                             </div>

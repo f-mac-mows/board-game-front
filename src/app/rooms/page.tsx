@@ -43,7 +43,7 @@ export default function RoomsPage() {
         });
 
         return () => {
-            if (stompClient.current) stompClient.current.disconnect();
+            if (stompClient.current) stompClient.current.deactivate();
         };
     }, []);
 
@@ -102,15 +102,36 @@ export default function RoomsPage() {
         }
     };
 
+    const returnToHome = () => {
+        router.push('/');
+    }
+
     return (
         <div className="min-h-screen bg-slate-950 text-white p-6 sm:p-12">
             <div className="max-w-6xl mx-auto">
                 <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
-                    <div>
-                        <h1 className="text-4xl font-black text-blue-500 tracking-tighter italic">GAME LOBBY</h1>
-                        <p className="text-slate-400 mt-1">
-                            <span className="text-blue-400 font-bold">{user?.nickname}</span>님, 환영합니다!
-                        </p>
+                    <div className="flex items-center gap-4">
+                        {/* 홈으로 돌아가기 버튼 */}
+                        <button 
+                            onClick={returnToHome}
+                            className="group p-3 bg-slate-900 border border-slate-800 rounded-2xl hover:border-blue-500/50 transition-all"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-400 group-hover:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                        </button>
+
+                        <div>
+                            <h1 
+                                onClick={returnToHome}
+                                className="text-4xl font-black text-blue-500 tracking-tighter italic cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                                GAME LOBBY
+                            </h1>
+                            <p className="text-slate-400 mt-1 text-sm">
+                                환영합니다, <span className="text-blue-400 font-bold">{user?.nickname}</span>님!
+                            </p>
+                        </div>
                     </div>
                     <div className="flex gap-3 w-full sm:w-auto">
                         <button 

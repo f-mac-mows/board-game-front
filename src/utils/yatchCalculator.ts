@@ -11,7 +11,8 @@ export const YachtCalculator = {
 
   calculateFullHouse: (dice: number[]) => {
     const counts = Object.values(getCounts(dice));
-    if (counts.length === 2 && counts.includes(3)) return 25;
+    const isFive = new Set(dice).size === 1;
+    if ((counts.length === 2 && counts.includes(3)) || isFive) return 25;
     return 0;
   },
 

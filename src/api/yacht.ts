@@ -9,4 +9,6 @@ export const yachtApi = {
         api.get(`/game/yacht/${gameId}/sync`),
     getResult: (gameId: number) =>
         api.get(`/game/yacht/${gameId}/result`),
+    updateKeep: (gameId: number, keepIndices: number[]) =>
+        api.post(`/game/yacht/${gameId}/keep`, {keepIndices}),
 };

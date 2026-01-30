@@ -30,27 +30,36 @@ export interface GameResult {
     scoreCards: ScoreCard[];
 }
 
-interface DiceRollEvent {
-    type: 'DICE_ROLLED';
+// 공통 베이스 인터페이스를 만들면 관리가 편합니다
+interface BaseGameEvent {
     sender: string;
+    remainingSeconds: number; // 서버에서 보내주는 필수 필드로 정의
+}
+
+interface KeepUpdatedEvent extends BaseGameEvent {
+    type: 'KEEP_UPDATED';
+    keepIndices: number[];
+}
+
+interface DiceRollEvent extends BaseGameEvent {
+    type: 'DICE_ROLLED';
     data: DiceStatus;
     nextTurn?: string;
 }
 
-interface ScoreRecordedEvent {
+interface ScoreRecordedEvent extends BaseGameEvent {
     type: 'SCORE_RECORDED';
-    sender: string;
     data: ScoreCard[];
     nextTurn?: string;
 }
 
-interface GameOverEvent {
+interface GameOverEvent extends BaseGameEvent {
     type: 'GAME_OVER';
-    sender: string;
     data: GameResult;
+    roomId: number;
 }
 
-interface SystemMessageEvent {
+interface SystemMessageEvent extends BaseGameEvent {
     type: 'TURN_CHANGED' | 'USER_DISCONNECTED';
     sender: 'SYSTEM';
     data: string;
@@ -58,7 +67,7 @@ interface SystemMessageEvent {
 }
 
 // 게임 이벤트
-export type YachtGameEvent = DiceRollEvent | ScoreRecordedEvent | GameOverEvent | SystemMessageEvent;
+export type YachtGameEvent = DiceRollEvent | ScoreRecordedEvent | GameOverEvent | SystemMessageEvent | KeepUpdatedEvent;
 
 // 다이스 카테고리
 export type ScoreCategory = 'ONES' | 'TWOS' | 'THREES' | 'FOURS' | 'FIVES' | 'SIXES' | 'CHOICE' | 'FOUR_OF_A_KIND' | 'FULL_HOUSE' | 'SMALL_STRAIGHT' | 'LARGE_STRAIGHT' | 'YACHT';

@@ -9,12 +9,16 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@stomp/stompjs": "^7.2.1",
+    "@types/three": "^0.182.0",
     "axios": "^1.13.2",
     "next": "16.1.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sockjs-client": "^1.6.1",
+    "three": "^0.182.0",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
