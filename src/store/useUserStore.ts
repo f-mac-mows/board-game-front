@@ -47,6 +47,7 @@ export const useUserStore = create<UserState>()(
         }),
         {
             name: 'mows-user-storage',
+            partialize: (state) => ({ user: state.user }),
         }
     )
 );

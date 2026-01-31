@@ -16,6 +16,7 @@ import { Stomp, CompatClient } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import Dice from "@/components/game/Dice";
 import { roomApi } from "@/api/rooms";
+import { authApi } from "@/api/auth";
 
 export default function YachtGamePage() {
     const { id } = useParams();
@@ -61,13 +62,12 @@ export default function YachtGamePage() {
 
     // --- 이벤트 핸들러 ---
     const handleGameEvent = (event: YachtGameEvent) => {
-            if (event.remainingSeconds !== undefined) {
+        if (event.remainingSeconds !== undefined) {
             setTimer(event.remainingSeconds);
         }
         switch (event.type) {
             case 'KEEP_UPDATED':
                 // 상대방이 보낸 Keep 상태를 내 화면에 반영
-                // (내가 보낸 이벤트가 다시 올 수도 있으므로 sender 체크 가능)
                 if (event.sender !== user?.nickname) {
                     setKeepIndices(event.keepIndices);
                 }
@@ -75,12 +75,22 @@ export default function YachtGamePage() {
 
             case 'DICE_ROLLED':
                 setIsRolling(true);
-                setTimeout(() => {
+                // 1. 애니메이션 완료를 기다리는 함수
+                const waitAnimation = () => new Promise((resolve) => setTimeout(resolve, 600));
+
+                waitAnimation().then(() => {
+                    // 2. 주사위 숫자 및 상태 업데이트 (애니메이션 종료 시점)
                     setDice(event.data.diceValues);
                     setRemainingRolls(event.data.remainingRolls);
                     setCurrentTurn(event.data.turnNickname);
                     setIsRolling(false);
-                }, 600);
+
+                    // 3. 0회일 때 Keep 초기화 및 서버 전송
+                    if (event.data.remainingRolls === 0) {
+                        setKeepIndices([]);
+                        yachtApi.updateKeep(gameId, []); 
+                    }
+                });
                 break;
 
             case 'SCORE_RECORDED':
@@ -89,9 +99,13 @@ export default function YachtGamePage() {
                 break;
 
             case 'TURN_CHANGED':
-                resetTurnState(event.nextTurn);
-                syncGameStatus();
+                console.log(event.nextTurn);
+                syncGameStatus().then(() => {
+                    // 서버에서 준 다음 턴 정보가 있다면 그걸 우선 사용, 없으면 sync 결과 사용
+                    resetTurnState(event.nextTurn);
+                });
                 break;
+
             case 'GAME_OVER':
                 setWinnerData(event.data);
                 setIsGameOver(true);
@@ -136,7 +150,10 @@ export default function YachtGamePage() {
     };
 
     const resetTurnState = (nextTurn?: string) => {
-        setCurrentTurn(nextTurn || "");
+        setIsRolling(false);
+        if (nextTurn) {
+            setCurrentTurn(nextTurn);
+        }
         setRemainingRolls(3);
         setKeepIndices([]);
         setDice([1, 1, 1, 1, 1]);
@@ -146,6 +163,7 @@ export default function YachtGamePage() {
     // --- 액션 함수 ---
     const handleRollDice = async () => {
         if (currentTurn !== user?.nickname || remainingRolls <= 0 || isRolling) return;
+
         try {
             await yachtApi.rollDice(gameId, keepIndices);
         } catch (err: any) {
@@ -315,9 +333,9 @@ export default function YachtGamePage() {
                                         
                                         ${isFilled 
                                             ? 'bg-slate-950 border-transparent text-white' 
-                                            : isMyTurn && remainingRolls < 3 
-                                                ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400 cursor-pointer shadow-lg shadow-blue-500/20' 
-                                                : 'bg-slate-950 border-slate-800 text-slate-700'
+                                            : isMyTurn && remainingRolls < 3
+                                                ? previewScore != 0 ? 'bg-blue-500/10 border-blue-500/100 border-2 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400 cursor-pointer shadow-lg shadow-blue-500/20'
+                                                : 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400 cursor-pointer shadow-lg shadow-blue-500/20'  : 'bg-slate-950 border-slate-800 text-slate-700'
                                         }
                                         
                                         ${(!isFilled && isMyTurn && remainingRolls < 3 && !isRolling) ? 'hover:scale-[1.02] active:scale-95' : ''}

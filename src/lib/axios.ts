@@ -12,34 +12,27 @@ api.interceptors.request.use((config) => {
 
 // 응답 인터셉터
 api.interceptors.response.use(
-    (response) => {
-        // 정상 응답은 그대로 반환
-        return response;
-    },
+    (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true; // 무한 루프 방지용 플래그
+        // 리프레시 요청이거나 이미 재시도 중이면 바로 종료 (중복 실행 방지)
+        if (originalRequest.url?.includes('/auth/refresh') || originalRequest._retry) {
+            return Promise.reject(error);
+        }
+
+        if (error.response?.status === 401) {
+            originalRequest._retry = true;
 
             try {
-                await axios.post(
-                    `${api.defaults.baseURL}/auth/refresh`, 
-                    {}, 
-                    { withCredentials: true }
-                );
-
+                await axios.post(`${api.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true });
                 return api(originalRequest);
             } catch (refreshError) {
-                console.error("세션이 만료되었습니다. 다시 로그인해주세요.");
- 
-                if (typeof window !== 'undefined') {
-                    window.location.href = '/auth/login'; 
-                }
+                // 리프레시 실패 시에는 조용히 에러만 던집니다.
+                // 그러면 AuthProvider의 catch 문이 잡아서 처리합니다.
                 return Promise.reject(refreshError);
             }
         }
-
         return Promise.reject(error);
     }
 );

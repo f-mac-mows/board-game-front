@@ -17,6 +17,7 @@ export default function HomePage() {
           console.error("서버 로그아웃 통신 실패 (이미 만료되었을 수 있음):", err);
       } finally {
           clearUser();
+          localStorage.clear();
           window.location.href = "/";
       }
   };
