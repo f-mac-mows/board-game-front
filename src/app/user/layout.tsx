@@ -3,12 +3,17 @@
 import React from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { User, BarChart3, Award, Settings, Wallet } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { User, BarChart3, Award, Settings, Wallet, Home } from 'lucide-react';
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const { user } = useUserStore();
+  const router = useRouter();
   const pathname = usePathname();
+
+  const returnToHome = () => {
+    router.push('/');
+  }
 
   if (!user) return null; // 또는 로그인 유도 컴포넌트
 
@@ -44,6 +49,17 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 <span className="text-slate-400">가입일: {new Date(user.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
+            {/* 홈으로 돌아가기 버튼 */}
+            <button 
+                onClick={returnToHome}
+                className="ml-auto flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-xl transition-all group"
+            >
+                <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:animate-ping" />
+                <span className="text-xs font-bold text-slate-400 group-hover:text-white uppercase tracking-tighter">
+                    Return Home
+                </span>
+                <Home size={16} className="text-slate-500 group-hover:text-blue-400" />
+            </button>
           </div>
 
           {/* 2. 내비게이션 탭 */}
@@ -52,17 +68,21 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
               const isActive = pathname === item.href;
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-medium transition-all ${
-                    isActive 
-                      ? 'bg-slate-900 border-t border-l border-r border-slate-800 text-blue-400' 
-                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'
-                  }`}
-                >
-                  {item.icon}
-                  {item.name}
-                </Link>
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-medium transition-all relative ${
+                        isActive 
+                        ? 'bg-slate-900 border-t border-l border-r border-slate-800 text-blue-400' 
+                        : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'
+                    }`}
+                    >
+                    {item.icon}
+                    {item.name}
+                    {/* 활성화 시 하단 라인을 가려 콘텐츠 영역과 연결된 느낌 전달 */}
+                    {isActive && (
+                        <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-slate-900 z-10" />
+                    )}
+                    </Link>
               );
             })}
           </nav>
