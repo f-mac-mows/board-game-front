@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { achievementApi } from '@/api/achievement';
 import { useAchievementStore } from '@/store/useAchievementStore';
+import { toast } from 'react-hot-toast'
 
 export const useAchievements = () => {
   const queryClient = useQueryClient();
@@ -20,17 +21,27 @@ export const useAchievements = () => {
   // 2. 보상 수령 Mutation
   const claimMutation = useMutation({
     mutationFn: (code: string) => achievementApi.claimReward(code),
-    onSuccess: (_, code) => {
-      // 스토어 상태 변경 (UI 즉시 반영)
-      markAsRewarded(code);
+    onSuccess: (reward, code) => {
+      // reward: { type: 'GOLD', value: '5000', label: '5,000 Gold' } 등의 응답 가정
       
-      // 유저의 골드나 레벨이 변했을 것이므로 프로필 정보 무효화(새로고침)
+      markAsRewarded(code);
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       
-      alert('보상이 성공적으로 지급되었습니다! 🎉');
+      if (reward.type === 'TITLE') {
+        toast.success(`새로운 칭호 [${reward.value}] 획득!`, {
+          icon: '🎖️',
+          style: { border: '1px solid #fbbf24', background: '#0f172a' }
+        });
+      } else if (reward.type === 'GOLD') {
+        toast.success(`${reward.value} 골드를 받았습니다!`, {
+          icon: '💰',
+          style: { border: '1px solid #fde047', background: '#0f172a' }
+        });
+      }
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || '보상 수령에 실패했습니다.');
+      const errorMsg = err.response?.data?.message || '보상 수령에 실패했습니다.';
+      toast.error(errorMsg);
     }
   });
 

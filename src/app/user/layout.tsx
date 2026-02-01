@@ -4,7 +4,8 @@ import React from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { User, BarChart3, Award, Settings, Wallet, Home, Crown } from 'lucide-react';
+import { User, BarChart3, Award, Settings, Wallet, Home, Crown, Milestone } from 'lucide-react';
+import { UserBadge } from '@/components/user/UserBadge';
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const { user } = useUserStore();
@@ -33,7 +34,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         <div className="max-w-5xl mx-auto px-6 pt-12 pb-6">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl font-black shadow-lg shadow-blue-600/20">
-              {user.nickname[0]}
+              <UserBadge nickname={user.nickname} title={user.activeTitle} color={user.titleColor} ></UserBadge>
             </div>
             <div>
               <div className="flex items-center gap-3">
@@ -43,8 +44,8 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 </span>
               </div>
               <div className="flex gap-4 mt-2 text-sm">
-                <span className="flex items-center gap-1 text-yellow-500 font-medium">
-                  <Wallet size={14} /> {user.asset.gold.toLocaleString()}
+                <span className="flex items-center gap-1 text-white font-medium">
+                  <Milestone size={14} /> Lv.{user.astat.level.toLocaleString()}
                 </span>
                 <span className="text-slate-500">|</span>
                 <span className="text-slate-400">가입일: {new Date(user.createdAt).toLocaleDateString()}</span>

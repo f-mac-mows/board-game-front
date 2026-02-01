@@ -5,7 +5,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
 import FloatingDice from '@/components/home/FloatingDice';
 import { authApi } from '@/api/auth';
-import { Trophy, User, Loader2 } from 'lucide-react';
+import { User, Loader2 } from 'lucide-react';
 
 export default function HomePage() {
   // 1. Selector 최적화: 필요한 값만 선택적으로 구독하여 불필요한 리렌더링 방지
@@ -51,7 +51,7 @@ export default function HomePage() {
           <p className="text-xl text-slate-400 font-medium">보드게임 플랫폼</p>
         </div>
 
-        <div className="py-16 flex justify-center gap-6 lg:gap-10">
+        <div className="py-14 flex justify-center gap-6 lg:gap-10">
           <FloatingDice/><FloatingDice/><FloatingDice/><FloatingDice/><FloatingDice/>
         </div>
 
@@ -73,7 +73,7 @@ export default function HomePage() {
                     <span className="text-xl font-black text-white">{user.nickname}님 환영합니다!</span>
                   </div>
                   <p className="text-sm text-slate-400 font-medium tracking-tight">
-                    {isPending ? "페이지 분석 중..." : "마이페이지 관리 및 설정"}
+                    {isPending ? "페이지 분석 중..." : "마이페이지"}
                   </p>
                 </div>
 
@@ -81,29 +81,7 @@ export default function HomePage() {
                   <span className="text-blue-400">→</span>
                 </div>
               </button>
-              <div className="flex gap-2">
-                <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2">
-                  <span className="text-red-500 font-bold">⚜️ Lv.{user.astat.level.toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2">
-                  <span className="text-yellow-500 font-bold">💰 {user.asset.gold.toLocaleString()} gold</span>
-                </div>
-                <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2">
-                  <span className="text-blue-400 font-bold">🅿️ {user.asset.point} pts</span>
-                </div>
-                {/* 업적 버튼 */}
-                <button 
-                  onClick={() => navigateTo('/user/achievements')}
-                  disabled={isPending}
-                  className="px-4 py-2 bg-emerald-900/30 border border-emerald-500/30 hover:border-emerald-500 rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50"
-                >
-                  <Trophy size={14} className="text-emerald-400" />
-                  <span className="text-emerald-400 font-bold text-sm">업적</span>
-                </button>
-              </div>
-              
+              <br/>
               <div className="flex gap-4">
                 <button 
                   onClick={() => navigateTo('/rooms')}

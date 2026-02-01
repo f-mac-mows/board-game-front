@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AuthProvider from "@/components/providers/authProvider";
 import QueryProvider from "@/components/providers/queryProvider";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Board Game Online",
@@ -21,6 +22,17 @@ export default function RootLayout({
           {children}
         </AuthProvider>
       </QueryProvider>
+      <Toaster 
+          position="bottom-center" // 위치 설정
+          toastOptions={{
+            style: {
+              background: '#1e293b', // slate-800
+              color: '#fff',
+              borderRadius: '1rem',
+              border: '1px solid #334155',
+            },
+          }}
+        />
       </body>
     </html>
   )

@@ -1,6 +1,7 @@
 import { useUserStore } from '@/store/useUserStore';
 import api from '@/lib/axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 
 export interface UserTitleInfo {
     code: string;
@@ -38,6 +39,16 @@ export function useTitles() {
             if (equippedTitle) {
                 // 2. Zustand 스토어 업데이트 (메인 UI 즉시 반영)
                 updateActiveTitle(equippedTitle.name, equippedTitle.colorCode);
+
+                toast.success(
+                    <div className="flex flex-col">
+                        <span className="font-bold">칭호 장착 완료!</span>
+                        <span style={{ color: equippedTitle.colorCode }} className="text-xs">
+                            [{equippedTitle.name}] (이)가 적용되었습니다.
+                        </span>
+                    </div>,
+                    { icon: '✨' }
+                );
             }
 
             // 3. 리액트 쿼리 캐시 갱신 (목록의 체크표시 등을 업데이트)

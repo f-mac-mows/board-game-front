@@ -7,6 +7,6 @@ export const roomApi = {
     join: (roomId: number) => api.post(`/rooms/join/${roomId}`),
     toggleReady: (roomId: number) => api.post(`/rooms/${roomId}/ready`),
     startGame: (roomId: number) => api.post(`/rooms/${roomId}/start`),
-    leave: (roomId: number) => api.post(`/rooms/${roomId}/leave`),
+    leave: (roomId: number) => api.post(`/rooms/${roomId}/leave`),  
     getRoomDetail: (roomId: number) => api.get<r.RoomDetailResponse>(`/rooms/${roomId}`),
 };
