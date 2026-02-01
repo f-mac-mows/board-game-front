@@ -1,6 +1,6 @@
 export type GameTypeCode = "YACHT" | "GOMOKU" | "ONECARD" | "BLACKJACK";
 
-interface GameTypeDetail {
+export interface GameTypeDetail {
     description: string;
     minPlayers: number;
     maxPlayers: number;

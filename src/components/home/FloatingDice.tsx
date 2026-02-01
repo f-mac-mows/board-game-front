@@ -104,7 +104,7 @@ function DiceMesh({ baseSpeed }: { baseSpeed: number }) {
 
 // --- 4. 메인 캔버스 ---
 export default function FloatingDice() {
-  const speed = useMemo(() => 0.4 + Math.random() * 0.4, []);
+  const speed = useMemo(() => 0.4 + Math.random() * 3, []);
 
   return (
     <div className="w-24 h-32 lg:w-24 lg:h-32 flex items-center justify-center cursor-pointer">

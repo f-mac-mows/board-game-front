@@ -1,3 +1,5 @@
+import { GameTypeCode } from "./rooms";
+
 export interface EmailRequest {
     email: string
 }
@@ -24,6 +26,7 @@ export interface AssetInfo {
 }
 
 export interface StatInfo {
+    gameType: GameTypeCode;
     level: number;
     exp: number;
     mmr: number;
@@ -37,6 +40,6 @@ export interface UserProfileResponse {
     profileCompleted: boolean;
     createdAt: string; // ISO 8601 string
     asset: AssetInfo;
-    stat: StatInfo;
+    stats: StatInfo[];
     activeRoomId: number | null;
 }

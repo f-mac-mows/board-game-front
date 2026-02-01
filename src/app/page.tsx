@@ -62,7 +62,7 @@ export default function HomePage() {
                   <span className="text-yellow-500 font-bold">💰 {user.asset.gold.toLocaleString()}</span>
                 </div>
                 <div className="px-4 py-2 bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700">
-                  <span className="text-blue-400 font-bold">🏆 {user.stat.mmr} MMR</span>
+                  <span className="text-blue-400 font-bold">🏆 {user.stats.length} MMR</span>
                 </div>
               </div>
               
