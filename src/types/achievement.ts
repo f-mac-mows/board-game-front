@@ -1,24 +1,25 @@
 export type AchievementCategory = 'COMBAT' | 'COLLECTION' | 'SOCIAL' | 'SPECIAL';
+export type RewardType = 'EXP' | 'GOLD' | 'TITLE';
 
-export interface Achievement {
-    id: string;               // 업적 고유 ID (예: 'win_10_games')
-    category: AchievementCategory;
-    title: string;            // 업적 이름 (예: "승리의 화신")
-    description: string;      // 업적 설명 (예: "게임에서 10번 승리하세요")
-    icon: string;             // 아이콘 이름 또는 경로
-    maxProgress: number;      // 목표 수치 (예: 10)
-    reward: {
-        type: 'EXP' | 'GOLD' | 'TITLE';
-        value: string | number;
-        label: string;        // 보상 이름 (예: "100 Gold", "초보자 칭호")
-    };
-    isHidden?: boolean;       // 달성 전까지 내용을 비밀로 할지 여부
+export interface RewardInfo {
+    type: RewardType;
+    value: string; // "5000", "DICE_MASTER" 등
+    label: string; // "5,000 Gold", "칭호: 주사위의 신"
 }
 
-export interface UserAchievement {
-    achievementId: string;
-    currentProgress: number;  // 현재 진행 수치 (예: 4 / 10)
-    isCompleted: boolean;     // 달성 여부
-    completedAt?: string;     // 달성 일자
-    isRewarded: boolean;      // 보상 수령 여부
+export interface AchievementResponse {
+    id: string;               // 백엔드의 code 필드 (비즈니스 키)
+    category: AchievementCategory;
+    title: string;
+    description: string;
+    icon: string;             // 이모지 또는 아이콘 경로
+    maxProgress: number;
+    hidden: boolean;
+    reward: RewardInfo;
+    
+    // 유저별 진행 데이터 (Join 결과)
+    currentProgress: number;
+    completed: boolean;
+    completedAt: string | null; // ISO 8601 string
+    rewarded: boolean;
 }

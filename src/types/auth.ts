@@ -20,6 +20,12 @@ export interface LoginRequest {
     password: string;
 }
 
+export interface AccountStat {
+    level: number;
+    currentExp: number;
+    requiredExp: number;
+}
+
 export interface AssetInfo {
     gold: number;
     point: number;
@@ -34,11 +40,15 @@ export interface StatInfo {
     draws: number;
     losses: number;
 }
+
 export interface UserProfileResponse {
     email: string;
     nickname: string;
     profileCompleted: boolean;
     createdAt: string; // ISO 8601 string
+    activeTitle: string | null;
+    titleColor: string | null;
+    astat: AccountStat;
     asset: AssetInfo;
     stats: StatInfo[];
     activeRoomId: number | null;

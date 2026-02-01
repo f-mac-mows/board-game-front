@@ -4,7 +4,7 @@ import React from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { User, BarChart3, Award, Settings, Wallet, Home } from 'lucide-react';
+import { User, BarChart3, Award, Settings, Wallet, Home, Crown } from 'lucide-react';
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const { user } = useUserStore();
@@ -21,7 +21,8 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const navItems = [
     { name: '프로필 홈', href: '/user', icon: <User size={18} /> },
     { name: '게임 전적', href: '/user/status', icon: <BarChart3 size={18} /> },
-    { name: '업적 & 칭호', href: '/user/achievements', icon: <Award size={18} /> },
+    { name: '업적', href: '/user/achievements', icon: <Award size={18} /> },
+    { name: '칭호', href: '/user/titles', icon: <Crown size={18} /> },
     { name: '설정', href: '/user/settings', icon: <Settings size={18} /> },
   ];
 

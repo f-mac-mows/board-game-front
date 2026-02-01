@@ -1,125 +1,202 @@
 "use client";
 
+import { useMemo } from 'react';
 import { useUserStore } from '@/store/useUserStore';
-import { Wallet, Sparkles, Award, Lock, ChevronRight, TrendingUp } from 'lucide-react';
+import { useAchievements } from '@/hooks/useAchievement';
+import { 
+    Wallet, 
+    Sparkles, 
+    Award, 
+    Lock, 
+    ChevronRight, 
+    TrendingUp, 
+    Zap,
+    Trophy
+} from 'lucide-react';
 
 export default function UserProfilePage() {
     const { user } = useUserStore();
+    const { achievements, isLoading: isAchLoading } = useAchievements();
 
-    if (!user) return null;
+    /**
+     * [방어 코드] 
+     * 데이터가 없거나 aStat이 정의되지 않았을 때 에러(TypeError)를 방지합니다.
+     */
+    const stats = useMemo(() => {
+        if (!user || !user.astat) return { currentExp: 0, requiredExp: 1000, level: 1, percent: 0 };
+        
+        // 백엔드에서 is가 빠져서 올 경우를 대비해 interface와 실제 데이터 확인 필요
+        // 만약 백엔드 DTO 필드명이 'currentExp'라면 아래와 같이 계산
+        const current = user.astat.currentExp ?? 0;
+        const required = user.astat.requiredExp ?? 1000;
+        const level = user.astat.level ?? 1;
+        const percent = Math.min((current / required) * 100, 100);
+        
+        return { 
+            current, 
+            required, 
+            level, 
+            percent 
+        };
+    }, [user]);
+
+    const recentAchievements = useMemo(() => {
+        if (!achievements) return [];
+        return achievements
+            .filter(a => a.completed)
+            .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())
+            .slice(0, 3);
+    }, [achievements]);
+
+    // 로딩 상태 처리
+    if (!user) {
+        return (
+            <div className="flex justify-center items-center h-64 text-slate-500 animate-pulse">
+                사용자 데이터를 동기화 중입니다...
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* 1. 자산 현황 섹션 (Assets) */}
-            <section>
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-400">
-                    <Wallet size={18} /> 보유 자산 상세
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* 골드 카드 */}
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                            <CoinsIcon size={80} className="text-yellow-500" />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            
+            {/* [Section 0] 종합 레벨 & 경험치 프로그레스 */}
+            <section className="relative overflow-hidden bg-slate-900 border border-slate-800 rounded-[2rem] p-8 shadow-2xl">
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full" />
+                
+                <div className="relative z-10">
+                    <div className="flex justify-between items-end mb-6">
+                        <div>
+                            <p className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.2em] mb-2 flex items-center gap-1.5">
+                                <Zap size={14} className="fill-emerald-500" /> Account Progression
+                            </p>
+                            <h2 className="text-5xl font-black text-white tracking-tighter">
+                                LV. <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                                    {stats.level}
+                                </span>
+                            </h2>
                         </div>
-                        <p className="text-sm text-slate-500 font-medium">보유 골드</p>
-                        <div className="flex items-baseline gap-2 mt-2">
-                            <h4 className="text-3xl font-black text-yellow-500">
-                                {user.asset.gold.toLocaleString()}
-                            </h4>
-                            <span className="text-slate-400 font-bold">GOLD</span>
+                        <div className="text-right flex flex-col items-end">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-black text-white">{stats.current}</span>
+                                <span className="text-xs text-slate-500 font-bold">/ {stats.required} EXP</span>
+                            </div>
+                            <p className="text-[10px] text-slate-600 font-medium mt-1">
+                                다음 레벨까지 {user.astat.requiredExp - user.astat.currentExp} 남음
+                            </p>
                         </div>
-                        <button className="mt-4 text-xs text-slate-500 hover:text-yellow-500 flex items-center gap-1 transition-colors">
-                            사용 내역 보기 <ChevronRight size={12} />
-                        </button>
                     </div>
 
-                    {/* 포인트 카드 */}
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                            <Sparkles size={80} className="text-blue-500" />
+                    <div className="w-full bg-slate-950 h-5 rounded-2xl border border-white/5 p-1 shadow-inner">
+                        <div 
+                            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 rounded-xl transition-all duration-1000 ease-out relative group"
+                            style={{ width: `${stats.percent}%` }}
+                        >
+                            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                            <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full blur-md animate-pulse" />
                         </div>
-                        <p className="text-sm text-slate-500 font-medium">누적 포인트</p>
-                        <div className="flex items-baseline gap-2 mt-2">
-                            <h4 className="text-3xl font-black text-blue-500">
-                                {user.asset.point.toLocaleString()}
-                            </h4>
-                            <span className="text-slate-400 font-bold">PT</span>
-                        </div>
-                        <button className="mt-4 text-xs text-slate-500 hover:text-blue-500 flex items-center gap-1 transition-colors">
-                            포인트 상점 이동 <ChevronRight size={12} />
-                        </button>
                     </div>
                 </div>
             </section>
 
-            {/* 2. 장착 중인 칭호 & 대표 업적 (Preview) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <section className="lg:col-span-2">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-400">
-                        <Award size={18} /> 최근 획득한 업적
-                    </h3>
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-2">
-                        {/* 업적 리스트 (임시) */}
-                        <div className="space-y-1">
-                            {[
-                                { name: "주사위의 입문자", desc: "야추 다이스 1회 플레이", date: "2026.01.30", color: "text-green-400" },
-                                { name: "첫 승리의 맛", desc: "아무 게임에서 1회 승리", date: "2026.01.31", color: "text-blue-400" },
-                            ].map((ach, i) => (
-                                <div key={i} className="flex items-center gap-4 p-4 hover:bg-slate-800/50 rounded-2xl transition-colors">
-                                    <div className={`p-3 bg-slate-950 rounded-xl ${ach.color}`}>
-                                        <Award size={24} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h5 className="font-bold">{ach.name}</h5>
-                                        <p className="text-xs text-slate-500">{ach.desc}</p>
-                                    </div>
-                                    <span className="text-xs text-slate-600 font-mono">{ach.date}</span>
-                                </div>
-                            ))}
-                            {/* 잠금된 업적 예시 */}
-                            <div className="flex items-center gap-4 p-4 opacity-40 grayscale">
-                                <div className="p-3 bg-slate-950 rounded-xl">
-                                    <Lock size={24} />
-                                </div>
-                                <div className="flex-1">
-                                    <h5 className="font-bold">주사위의 신</h5>
-                                    <p className="text-xs text-slate-500">야추 다이스에서 10연승 달성</p>
-                                </div>
-                                <span className="text-xs text-slate-600">Locked</span>
-                            </div>
+            {/* [Section 1] 자산 현황 섹션 */}
+            <section>
+                <h3 className="text-sm font-black mb-4 flex items-center gap-2 text-slate-500 uppercase tracking-widest">
+                    <Wallet size={16} /> Asset Overview
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] relative overflow-hidden group hover:border-yellow-500/50 transition-all">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500">
+                            <CoinsIcon size={100} className="text-yellow-500" />
+                        </div>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Available Balance</p>
+                        <div className="flex items-baseline gap-2 mt-3">
+                            <h4 className="text-4xl font-black text-yellow-500 tracking-tight">
+                                {user.asset?.gold?.toLocaleString() ?? 0}
+                            </h4>
+                            <span className="text-slate-500 font-black text-sm">GOLD</span>
                         </div>
                     </div>
-                </section>
 
-                {/* 3. 간단한 랭킹 현황 (Sidebar Style) */}
-                <section>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-400">
-                        <TrendingUp size={18} /> 종합 랭킹
-                    </h3>
-                    <div className="bg-gradient-to-br from-slate-900 to-blue-900/20 border border-slate-800 rounded-3xl p-6 text-center">
-                        <p className="text-xs text-slate-500 uppercase tracking-widest">Global Rank</p>
-                        <h4 className="text-4xl font-black mt-2 text-white italic">#1,248</h4>
-                        <div className="mt-6 space-y-3">
-                            <div className="flex justify-between text-sm border-b border-slate-800 pb-2">
-                                <span className="text-slate-500">상위</span>
-                                <span className="text-blue-400 font-bold">14.2%</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">다음 티어까지</span>
-                                <span className="text-slate-300">124 MMR</span>
-                            </div>
+                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] relative overflow-hidden group hover:border-blue-500/50 transition-all">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500">
+                            <Sparkles size={100} className="text-blue-500" />
+                        </div>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Accumulated Points</p>
+                        <div className="flex items-baseline gap-2 mt-3">
+                            <h4 className="text-4xl font-black text-blue-500 tracking-tight">
+                                {user.asset?.point?.toLocaleString() ?? 0}
+                            </h4>
+                            <span className="text-slate-500 font-black text-sm">PT</span>
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
+
+            {/* [Section 2] 업적 섹션 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    <h3 className="text-sm font-black mb-4 flex items-center gap-2 text-slate-500 uppercase tracking-widest">
+                        <Award size={16} /> Recent Milestones
+                    </h3>
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] p-3 backdrop-blur-sm">
+                        <div className="space-y-2">
+                            {isAchLoading ? (
+                                <div className="p-10 text-center text-slate-600 animate-pulse text-sm">업적 로드 중...</div>
+                            ) : recentAchievements.length > 0 ? (
+                                recentAchievements.map((ach) => (
+                                    <div key={ach.id} className="flex items-center gap-4 p-5 hover:bg-slate-800/80 rounded-2xl transition-all border border-transparent hover:border-white/5 group">
+                                        <div className="p-4 bg-slate-950 rounded-2xl text-2xl group-hover:scale-110 transition-transform">
+                                            {ach.icon}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h5 className="font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">{ach.title}</h5>
+                                            <p className="text-xs text-slate-500 mt-1 line-clamp-1">{ach.description}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="block text-[10px] text-slate-600 font-mono">
+                                                {ach.completedAt ? new Date(ach.completedAt).toLocaleDateString() : '-'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center p-12 text-slate-600 border-2 border-dashed border-slate-800 rounded-3xl">
+                                    <Trophy size={40} className="mb-3 opacity-20" />
+                                    <p className="text-sm">달성한 업적이 없습니다.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* [Section 3] 랭킹 섹션 */}
+                <div>
+                    <h3 className="text-sm font-black mb-4 flex items-center gap-2 text-slate-500 uppercase tracking-widest">
+                        <TrendingUp size={16} /> Global Status
+                    </h3>
+                    <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-900/20 border border-slate-800 rounded-[2rem] p-8 text-center relative overflow-hidden group">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">Current Rank</p>
+                        <h4 className="text-5xl font-black mt-4 text-white italic">#1,248</h4>
+                        <div className="mt-8 space-y-4">
+                            <div className="flex justify-between items-center text-sm bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                                <span className="text-slate-500 font-bold">Percentile</span>
+                                <span className="text-emerald-400 font-black text-lg">TOP 14%</span>
+                            </div>
+                            <button className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2">
+                                리더보드 전체보기 <ChevronRight size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
-// 아이콘 보조 컴포넌트
 function CoinsIcon({ size, className }: { size: number, className: string }) {
     return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
             <circle cx="8" cy="8" r="6"/><path d="M18 8c0 4.42-3.58 8-8 8a8.003 8.003 0 0 1-7.11-4.39"/><path d="M23 12a9 9 0 0 1-15.56 6.11"/>
         </svg>
     );

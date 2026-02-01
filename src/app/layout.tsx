@@ -5,7 +5,7 @@ import QueryProvider from "@/components/providers/queryProvider";
 
 export const metadata: Metadata = {
   title: "Board Game Online",
-  description: "실시간 보드 게임을 즐겨보세요."
+  description: "왈렁이와 멍낑이랑 실시간 보드 게임을 즐겨보세요."
 };
 
 export default function RootLayout({

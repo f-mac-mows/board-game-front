@@ -7,6 +7,7 @@ interface UserState {
     currentRoomId: number | null;
     setUser: (user: UserProfileResponse) => void;
     setCurrentRoomId: (roomId: number | null) => void;
+    updateActiveTitle: (titleName: string | null, colorCode: string | null) => void;
     clearUser: () => void;
 }
 
@@ -24,6 +25,14 @@ export const useUserStore = create<UserState>()(
 
             setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
 
+            updateActiveTitle: (titleName, colorCode) => set((state) => ({
+                user: state.user ? {
+                    ...state.user,
+                    activeTitle: titleName,
+                    titleColor: colorCode
+                } : null
+            })),
+            
             clearUser: () => {
                 // Zustand 상태 초기화
                 set({ user: null, currentRoomId: null });

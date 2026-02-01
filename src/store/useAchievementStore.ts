@@ -1,28 +1,42 @@
 import { create } from 'zustand';
-import { Achievement, UserAchievement } from '@/types/achievement';
+import { AchievementResponse } from '@/types/achievement';
 
 interface AchievementState {
-  allAchievements: Achievement[];
-  userAchievements: UserAchievement[];
-  
-  // 데이터 초기화
-  setInitialData: (all: Achievement[], user: UserAchievement[]) => void;
-  
-  // 진행도 실시간 업데이트 (클라이언트 UI 반영용)
-  updateUserProgress: (achievementId: string, progress: number) => void;
+    achievements: AchievementResponse[];
+    
+    // API로부터 받은 전체 리스트 세팅
+    setAchievements: (data: AchievementResponse[]) => void;
+    
+    // 특정 업적의 진행도 실시간 업데이트 (UI 즉시 반영용)
+    updateProgress: (code: string, progress: number) => void;
+    
+    // 보상 수령 상태 변경
+    markAsRewarded: (code: string) => void;
 }
 
 export const useAchievementStore = create<AchievementState>((set) => ({
-  allAchievements: [],
-  userAchievements: [],
+    achievements: [],
 
-  setInitialData: (all, user) => set({ allAchievements: all, userAchievements: user }),
+    setAchievements: (data) => set({ achievements: data }),
 
-  updateUserProgress: (achievementId, progress) => set((state) => ({
-    userAchievements: state.userAchievements.map(ua => 
-      ua.achievementId === achievementId 
-        ? { ...ua, currentProgress: progress, isCompleted: progress >= (state.allAchievements.find(a => a.id === achievementId)?.maxProgress || 0) }
-        : ua
-    )
-  }))
+    updateProgress: (code, progress) => set((state) => ({
+        achievements: state.achievements.map((a) => {
+            if (a.id === code) {
+                const isCompleted = progress >= a.maxProgress;
+                return {
+                    ...a,
+                    currentProgress: Math.min(progress, a.maxProgress),
+                    isCompleted,
+                    completedAt: isCompleted && !a.completed ? new Date().toISOString() : a.completedAt
+                };
+            }
+            return a;
+        })
+    })),
+
+    markAsRewarded: (code) => set((state) => ({
+        achievements: state.achievements.map((a) => 
+            a.id === code ? { ...a, rewarded: true } : a
+        )
+    }))
 }));

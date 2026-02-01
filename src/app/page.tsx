@@ -81,7 +81,11 @@ export default function HomePage() {
                   <span className="text-blue-400">→</span>
                 </div>
               </button>
-
+              <div className="flex gap-2">
+                <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2">
+                  <span className="text-red-500 font-bold">⚜️ Lv.{user.astat.level.toLocaleString()}</span>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2">
                   <span className="text-yellow-500 font-bold">💰 {user.asset.gold.toLocaleString()} gold</span>
