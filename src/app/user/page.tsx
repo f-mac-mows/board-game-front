@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useUserStore } from '@/store/useUserStore';
-import { useAchievements } from '@/hooks/useAchievement';
+import { useAchievements } from '@/hooks/useAchievements';
 import { 
     Wallet, 
     Sparkles, 

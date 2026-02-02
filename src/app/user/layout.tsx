@@ -40,7 +40,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             {/* 유저 기본 정보 */}
             <div className="flex flex-col items-center lg:items-start space-y-3 flex-1 text-center lg:text-left">
               <div className="flex flex-col lg:flex-row items-center gap-3">
-                <h1 className="text-3xl lg:text-4xl font-black italic tracking-tighter uppercase">{user.nickname}</h1>
+                <h1 className="text-3xl lg:text-4xl font-black tracking-tighter uppercase">{user.nickname}</h1>
                 <span className="text-[10px] font-mono bg-slate-800 text-slate-500 px-3 py-1 rounded-lg border border-slate-700 uppercase tracking-wider">
                   ID: {user.email.split('@')[0]}
                 </span>

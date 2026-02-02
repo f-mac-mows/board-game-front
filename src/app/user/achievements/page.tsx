@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { AchievementCategory } from "@/types/achievement";
-import { useAchievements } from "@/hooks/useAchievement";
+import { useAchievements } from "@/hooks/useAchievements";
 
 // 카테고리 스타일 매핑
 const categoryStyles: Record<AchievementCategory, { color: string; bgColor: string; borderColor: string; icon: string }> = {
