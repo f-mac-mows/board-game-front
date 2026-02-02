@@ -4,7 +4,7 @@ import React from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { User, BarChart3, Award, Settings, Wallet, Home, Crown, Milestone } from 'lucide-react';
+import { User, BarChart3, Award, Settings, Home, Crown, Milestone } from 'lucide-react';
 import { UserBadge } from '@/components/user/UserBadge';
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
@@ -12,13 +12,8 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
 
-  const returnToHome = () => {
-    router.push('/');
-  }
+  if (!user) return null;
 
-  if (!user) return null; // 또는 로그인 유도 컴포넌트
-
-  // 내비게이션 메뉴 구성
   const navItems = [
     { name: '프로필 홈', href: '/user', icon: <User size={18} /> },
     { name: '게임 전적', href: '/user/status', icon: <BarChart3 size={18} /> },
@@ -28,73 +23,102 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* 1. 상단 공통 히어로 영역 (선택 사항) */}
-      <div className="bg-gradient-to-b from-blue-900/20 to-slate-950 border-b border-slate-800">
-        <div className="max-w-5xl mx-auto px-6 pt-12 pb-6">
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl font-black shadow-lg shadow-blue-600/20">
-              <UserBadge nickname={user.nickname} title={user.activeTitle} color={user.titleColor} ></UserBadge>
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-blue-500/30">
+      {/* 1. 상단 히어로 영역 */}
+      <div className="bg-gradient-to-b from-blue-900/20 to-slate-950 border-b border-slate-800/50">
+        <div className="max-w-5xl mx-auto px-6 pt-12 lg:pt-16">
+          <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6 lg:gap-8">
+            
+            {/* 프로필 이미지 박스 */}
+            <div className="relative group shrink-0">
+              <div className="absolute inset-0 bg-blue-600 rounded-[2.5rem] blur-3xl opacity-20 group-hover:opacity-30 transition-opacity" />
+              <div className="relative w-24 h-24 lg:w-28 lg:h-28 bg-slate-900 border border-slate-800 rounded-[2.5rem] flex items-center justify-center text-3xl shadow-2xl transition-transform group-hover:scale-[1.02]">
+                <UserBadge nickname={user.nickname} title={user.activeTitle} color={user.titleColor} />
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold">{user.nickname}</h1>
-                <span className="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">
+
+            {/* 유저 기본 정보 */}
+            <div className="flex flex-col items-center lg:items-start space-y-3 flex-1 text-center lg:text-left">
+              <div className="flex flex-col lg:flex-row items-center gap-3">
+                <h1 className="text-3xl lg:text-4xl font-black italic tracking-tighter uppercase">{user.nickname}</h1>
+                <span className="text-[10px] font-mono bg-slate-800 text-slate-500 px-3 py-1 rounded-lg border border-slate-700 uppercase tracking-wider">
                   ID: {user.email.split('@')[0]}
                 </span>
               </div>
-              <div className="flex gap-4 mt-2 text-sm">
-                <span className="flex items-center gap-1 text-white font-medium">
-                  <Milestone size={14} /> Lv.{user.astat.level.toLocaleString()}
+              
+              <div className="flex items-center gap-4 text-sm font-bold">
+                <span className="flex items-center gap-1.5 text-blue-500">
+                  <Milestone size={16} /> LV.{user.astat.level.toLocaleString()}
                 </span>
-                <span className="text-slate-500">|</span>
-                <span className="text-slate-400">가입일: {new Date(user.createdAt).toLocaleDateString()}</span>
+                <span className="w-[1px] h-3 bg-slate-800" />
+                <span className="text-slate-500 uppercase tracking-widest text-[11px]">
+                  가입일: {new Date(user.createdAt).toLocaleDateString()}
+                </span>
               </div>
             </div>
-            {/* 홈으로 돌아가기 버튼 */}
+
+            {/* 홈 버튼 - 모바일에서 하단 배치 방지를 위해 lg:ml-auto 유지 */}
             <button 
-                onClick={returnToHome}
-                className="ml-auto flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-xl transition-all group"
+                onClick={() => router.push('/')}
+                className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-4 lg:py-3 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-2xl transition-all group active:scale-95"
             >
-                <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:animate-ping" />
-                <span className="text-xs font-bold text-slate-400 group-hover:text-white uppercase tracking-tighter">
-                    Return Home
-                </span>
                 <Home size={16} className="text-slate-500 group-hover:text-blue-400" />
+                <span className="text-xs font-black text-slate-500 group-hover:text-white uppercase tracking-widest">
+                    Return Lobby
+                </span>
             </button>
           </div>
 
-          {/* 2. 내비게이션 탭 */}
-          <nav className="flex gap-1 mt-10">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-medium transition-all relative ${
-                        isActive 
-                        ? 'bg-slate-900 border-t border-l border-r border-slate-800 text-blue-400' 
-                        : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'
-                    }`}
+          {/* 2. 내비게이션 탭 영역 (삐져나옴 방지 핵심) */}
+          <div className="mt-12 relative">
+            <div className="overflow-x-auto no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+              <nav className="flex flex-nowrap min-w-max border-b border-slate-800/50">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`
+                        flex items-center gap-2 px-6 py-5 
+                        font-black text-[11px] lg:text-xs uppercase tracking-[0.15em] transition-all relative whitespace-nowrap
+                        ${isActive 
+                          ? 'text-blue-500' 
+                          : 'text-slate-500 hover:text-slate-300'
+                        }
+                      `}
                     >
-                    {item.icon}
-                    {item.name}
-                    {/* 활성화 시 하단 라인을 가려 콘텐츠 영역과 연결된 느낌 전달 */}
-                    {isActive && (
-                        <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-slate-900 z-10" />
-                    )}
+                      {item.icon}
+                      {item.name}
+                      
+                      {/* 활성화 언더라인 */}
+                      {isActive && (
+                        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-blue-500 rounded-t-full shadow-[0_-4px_12px_rgba(59,130,246,0.6)] z-20 animate-in fade-in zoom-in duration-300" />
+                      )}
                     </Link>
-              );
-            })}
-          </nav>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 3. 하위 페이지 콘텐츠 출력 영역 */}
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      {/* 3. 콘텐츠 영역 */}
+      <main className="max-w-5xl mx-auto px-6 py-8 lg:py-12 animate-in fade-in slide-in-from-bottom-3 duration-700">
         {children}
       </main>
+
+      {/* 가로 스크롤바 제거 스타일 */}
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+      `}</style>
     </div>
   );
 }

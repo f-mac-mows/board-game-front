@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox, Circle } from "@react-three/drei";
 import * as THREE from "three";
@@ -53,6 +53,11 @@ function DiceMesh({ baseSpeed }: { baseSpeed: number }) {
   const targetSpeed = useRef(baseSpeed);
   const currentFloatingY = useRef(0);
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 1024);
+  }, []);
+
   useFrame((state, delta) => {
     // 1. 호버 상태에 따라 목표 속도 설정 (호버 시 4배 가속)
     const multiplier = hovered ? 15.0 : 1.0;
@@ -81,14 +86,16 @@ function DiceMesh({ baseSpeed }: { baseSpeed: number }) {
       ref={groupRef}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
+      onPointerDown={() => setHovered(true)}
+      onPointerUp={() => setHovered(false)}
     >
-      <RoundedBox args={[3.5, 3.5, 3.5]} radius={0.4} smoothness={4}>
+      <RoundedBox args={[3.5, 3.5, 3.5]} radius={0.4} smoothness={isMobile ? 2 : 4}>
         <meshStandardMaterial 
           color={hovered ? "#f8fafc" : "white"} 
           roughness={0.1} 
           metalness={0.05} 
-          emissive={hovered ? "#3b84f6" : "black"} // 호버 시 푸른 빛
-          emissiveIntensity={hovered ? 0.2 : 0}
+          emissive={hovered ? "#3b82f6" : "black"} 
+          emissiveIntensity={hovered ? 0.3 : 0}
         />
       </RoundedBox>
 
@@ -103,15 +110,19 @@ function DiceMesh({ baseSpeed }: { baseSpeed: number }) {
 }
 
 // --- 4. 메인 캔버스 ---
-export default function FloatingDice() {
+export default function FloatingDice({ className = "" }: { className?: string }) {
   const speed = useMemo(() => 0.4 + Math.random() * 3, []);
 
   return (
-    <div className="w-24 h-32 lg:w-24 lg:h-32 flex items-center justify-center cursor-pointer">
-      <Canvas camera={{ position: [0, 0, 10], fov: 45 }} gl={{ alpha: true }}>
+    <div className={`w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-32 flex items-center justify-center cursor-pointer transition-transform ${className}`}>
+      <Canvas 
+        camera={{ position: [0, 0, 10], fov: 45 }} 
+        gl={{ alpha: true, antialias: true }}
+        // 모바일 성능을 위해 dpr(픽셀 밀도) 제한
+        dpr={[1, 2]}
+      >
         <ambientLight intensity={1.5} />
         <pointLight position={[10, 10, 10]} intensity={2} />
-        <spotLight position={[-10, 10, 10]} angle={0.15} penumbra={1} intensity={1} />
         <DiceMesh baseSpeed={speed} />
       </Canvas>
     </div>
