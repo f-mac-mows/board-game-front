@@ -19,14 +19,11 @@ export default function UserProfilePage() {
     const { achievements, isLoading: isAchLoading } = useAchievements();
 
     /**
-     * [방어 코드] 
      * 데이터가 없거나 aStat이 정의되지 않았을 때 에러(TypeError)를 방지합니다.
      */
     const stats = useMemo(() => {
         if (!user || !user.astat) return { currentExp: 0, requiredExp: 1000, level: 1, percent: 0 };
         
-        // 백엔드에서 is가 빠져서 올 경우를 대비해 interface와 실제 데이터 확인 필요
-        // 만약 백엔드 DTO 필드명이 'currentExp'라면 아래와 같이 계산
         const current = user.astat.currentExp ?? 0;
         const required = user.astat.requiredExp ?? 1000;
         const level = user.astat.level ?? 1;

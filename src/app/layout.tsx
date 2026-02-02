@@ -5,7 +5,7 @@ import QueryProvider from "@/components/providers/queryProvider";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "Board Game Online",
+  title: "Walrung Online",
   description: "왈렁이와 멍낑이랑 실시간 보드 게임을 즐겨보세요."
 };
 

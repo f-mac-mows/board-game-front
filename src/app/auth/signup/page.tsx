@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/api/auth";
+import { Check, ExternalLink } from "lucide-react";
 
 export default function SignUpPage() {
     const [step, setStep] = useState(1); // 1: 이메일 인증, 2: 상세 정보 입력
@@ -23,10 +24,33 @@ export default function SignUpPage() {
     const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: "", text: ""});
+    const [agreed, setAgreed] = useState(false)
+    const [timer, setTimer] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        if (timer > 0) {
+            timerRef.current = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        } else if (timer === 0 && timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [timer]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
     
     const isFormInvalid = 
     !formData.nickname || 
     !formData.password || 
+    !agreed ||
     !!errors.email ||
     !!errors.nickname ||   // 문자열이 있으면 true, 없으면 false로 변환
     !!errors.password || 
@@ -76,6 +100,7 @@ export default function SignUpPage() {
         try {
             await authApi.emailRequest({ email: formData.email});
             setMessage({ type: "success", text: "인증번호가 발송되었습니다."});
+            setTimer(300);
         } catch (err: any) {
             setMessage({ type: "error", text: "인증번호 발송 실패: " + err.response?.data?.message});
         } finally {
@@ -137,50 +162,69 @@ export default function SignUpPage() {
 
                 {/* 단계별 가입 폼 */}
                 <form className="space-y-4" onSubmit={handleSignUp}>
-                {step === 1 && isEmailVerified == false ? (
+                {step === 1 && !isEmailVerified ? (
                     <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300">이메일 주소</label>
-                        <div className="mt-1 flex gap-2">
-                        <input
-                            name="email"
-                            type="email"
-                            required
-                            className={`flex-1 px-4 py-3 bg-slate-800 border rounded-lg text-white focus:ring-2 focus:outline-none transition-all ${
-                                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-blue-500'
-                            }`}
-                            value={formData.email}
-                            onChange={handleChange}
-                        />
-                        <button
-                            type="button"
-                            onClick={handleEmailRequest}
-                            className="px-4 py-2 bg-slate-700 text-sm font-bold rounded-lg hover:bg-slate-600 transition-colors"
-                        >
-                            인증요청
-                        </button>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300">이메일 주소</label>
+                            <div className="mt-1 flex gap-2">
+                                <input
+                                    name="email"
+                                    type="email"
+                                    required
+                                    className={`flex-1 px-4 py-3 bg-slate-800 border rounded-lg text-white focus:ring-2 focus:outline-none transition-all ${
+                                        errors.email ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-blue-500'
+                                    }`}
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    disabled={timer > 0} // 인증 진행 중에는 이메일 수정 방지
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleEmailRequest}
+                                    disabled={isLoading || timer > 0 || !!errors.email || !formData.email}
+                                    className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
+                                        timer > 0 
+                                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                                        : 'bg-slate-700 text-white hover:bg-slate-600'
+                                    }`}
+                                >
+                                    {timer > 0 ? "재전송 대기" : "인증요청"}
+                                </button>
+                            </div>
+                            {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
                         </div>
-                        {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300">인증번호</label>
-                        <div className="mt-1 flex gap-2">
-                        <input
-                            name="code"
-                            type="text"
-                            className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            value={formData.code}
-                            onChange={(e) => setFormData({...formData, code: e.target.value})}
-                        />
-                        <button
-                            type="button"
-                            onClick={handleEmailVerify}
-                            className="px-4 py-2 bg-blue-600 text-sm font-bold rounded-lg hover:bg-blue-500 transition-colors"
-                        >
-                            확인
-                        </button>
+
+                        <div>
+                            <div className="flex justify-between items-center">
+                                <label className="block text-sm font-medium text-slate-300">인증번호</label>
+                                {timer > 0 && (
+                                    <span className="text-xs font-mono text-blue-500 animate-pulse">
+                                        남은 시간 {formatTime(timer)}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="mt-1 flex gap-2">
+                                <input
+                                    name="code"
+                                    type="text"
+                                    placeholder="6자리 번호 입력"
+                                    className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                                    value={formData.code}
+                                    onChange={(e) => setFormData({...formData, code: e.target.value})}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleEmailVerify}
+                                    disabled={isLoading || !formData.code}
+                                    className="px-6 py-2 bg-blue-600 text-sm font-bold rounded-lg hover:bg-blue-500 transition-colors disabled:bg-slate-800 disabled:text-slate-600"
+                                >
+                                    확인
+                                </button>
+                            </div>
+                            {timer === 0 && message.type === "success" && (
+                                <p className="mt-1 text-[10px] text-red-400">인증 시간이 만료되었습니다. 다시 요청해 주세요.</p>
+                            )}
                         </div>
-                    </div>
                     </div>
                 ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
@@ -232,15 +276,41 @@ export default function SignUpPage() {
                         />
                         {errors.confirmPassword && <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>}
                     </div>
+                    {/* ✨ 약관 동의 섹션 추가 */}
+                    <div className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800/50 space-y-3 mt-6">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <div className="relative mt-0.5">
+                                <input 
+                                    type="checkbox" 
+                                    className="peer sr-only"
+                                    checked={agreed}
+                                    onChange={(e) => setAgreed(e.target.checked)}
+                                />
+                                <div className="w-5 h-5 border-2 border-slate-700 rounded-md bg-slate-900 peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center">
+                                    <Check size={14} className={`text-white transition-opacity ${agreed ? 'opacity-100' : 'opacity-0'}`} strokeWidth={4} />
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
+                                    서비스 이용 약관 전체 동의 (필수)
+                                </span>
+                                <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
+                                    <Link href="/terms" target="_blank" className="text-blue-500 hover:underline inline-flex items-center gap-0.5">이용약관<ExternalLink size={10}/></Link> 및 
+                                    <Link href="/privacy" target="_blank" className="text-blue-500 hover:underline inline-flex items-center gap-0.5 ml-1">개인정보 처리방침<ExternalLink size={10}/></Link>에 동의합니다.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+
                     <button
-                        type="submit"
-                        disabled={isLoading || isFormInvalid}
-                        className={`w-full py-3 px-4 font-bold rounded-lg transition-all ${
-                            isFormInvalid ? 'bg-slate-700 cursor-not-allowed text-slate-400' : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
-                    >
-                        가입 완료
-                    </button>
+                            type="submit"
+                            disabled={isLoading || isFormInvalid}
+                            className={`w-full py-4 px-4 font-black rounded-2xl transition-all text-lg shadow-lg ${
+                                isFormInvalid ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/10'
+                            }`}
+                        >
+                            {isLoading ? "PROCESSING..." : "JOIN THE GAME"}
+                        </button>
                     </div>
                 )}
                 </form>

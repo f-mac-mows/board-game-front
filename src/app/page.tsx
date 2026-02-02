@@ -5,16 +5,19 @@ import { useUserStore } from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
 import FloatingDice from '@/components/home/FloatingDice';
 import { authApi } from '@/api/auth';
-import { User, Loader2 } from 'lucide-react';
+import { useQuests } from '@/hooks/useQuests';
+import { User, Loader2, LogOut, ChevronRight, Gamepad2, CheckCircle, ScrollText, Gift } from 'lucide-react';
+import { UserBadge } from '@/components/user/UserBadge';
 
 export default function HomePage() {
-  // 1. Selector 최적화: 필요한 값만 선택적으로 구독하여 불필요한 리렌더링 방지
   const user = useUserStore((state) => state.user);
   const clearUser = useUserStore((state) => state.clearUser);
   
   const [mounted, setMounted] = useState(false);
-  const [isPending, startTransition] = useTransition(); // 이동 연산 최적화
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const { quests, isLoading: isQuestLoading, claimReward } = useQuests();
+  const topQuests = quests?.slice(0, 3) || []; // 상위 3개만 표시
 
   const handleLogout = async () => {
     try {
@@ -28,7 +31,6 @@ export default function HomePage() {
     }
   };
 
-  // 2. 안전한 내비게이션 함수
   const navigateTo = (href: string) => {
     startTransition(() => {
       router.push(href);
@@ -39,86 +41,199 @@ export default function HomePage() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return <main className="min-h-screen bg-slate-900"></main>;
+  if (!mounted) return <main className="min-h-screen bg-slate-950"></main>;
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-4 overflow-hidden">
-      <div className="relative text-center space-y-6 max-w-2xl z-10">
-        <div className='space-y-2'>
-          <h1 className="text-7xl font-black tracking-tighter text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-            Board Game
-          </h1>
-          <p className="text-xl text-slate-400 font-medium">보드게임 플랫폼</p>
-        </div>
+    <main className="min-h-screen flex bg-slate-950 text-white overflow-hidden">
+      {/* [좌측] 프로필 사이드바 */}
+      <aside className="w-[380px] border-l border-slate-800/50 bg-slate-900/20 backdrop-blur-3xl p-10 flex flex-col justify-between z-20">
+        <div className="space-y-10">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">Player Status</span>
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+            </div>
+          </div>
 
-        <div className="py-14 flex justify-center gap-6 lg:gap-10">
-          <FloatingDice/><FloatingDice/><FloatingDice/><FloatingDice/><FloatingDice/>
-        </div>
-
-        {/* 버튼 영역 */}
-        <div className="flex gap-4 justify-center pt-4">
           {user ? (
-            <div className="flex flex-col items-center gap-4">
-              <button 
-                onClick={() => navigateTo('/user')}
-                disabled={isPending}
-                className="group relative flex items-center gap-4 p-4 bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700 rounded-2xl transition-all hover:scale-[1.02] text-left disabled:opacity-70"
-              >
-                <div className="w-16 h-15 bg-blue-600 rounded-full flex items-center justify-center border-2 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] group-hover:rotate-12 transition-transform">
-                  {isPending ? <Loader2 className="animate-spin" size={32} /> : <User size={32} />}
+            <div className="space-y-8">
+              {/* 프로필 메인 */}
+              <div className="flex flex-col items-center space-y-4 text-center">
+                <div className="relative group w-24 h-24">
+                  <div className="absolute inset-0 bg-blue-500 rounded-[32px] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="relative w-24 h-24 bg-slate-800 border border-slate-700 rounded-[32px] flex items-center justify-center transition-transform group-hover:rotate-3">
+                    <User size={48} className="text-blue-500" />
+                  </div>
                 </div>
                 
-                <div className="pr-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-black text-white">{user.nickname}님 환영합니다!</span>
-                  </div>
-                  <p className="text-sm text-slate-400 font-medium tracking-tight">
-                    {isPending ? "페이지 분석 중..." : "마이페이지"}
-                  </p>
+                <div className="space-y-1 text-3xl font-black tracking-tight">
+                  <UserBadge nickname={user.nickname} title={user.activeTitle} color={user.titleColor}></UserBadge>
+                </div>
+              </div>
+
+              {/* 스탯 정보 */}
+              <div className="grid grid-cols-1 gap-3">
+                <div className="p-3 bg-slate-800/30 rounded-2xl border border-white/5 flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-500">LV</span>
+                  <span className="text-lg font-mono font-black italic">{user.astat.level}</span>
+                </div>
+                <div className="p-3 bg-slate-800/30 rounded-2xl border border-white/5 flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Rank</span>
+                  <span className="text-lg font-mono font-black italic text-green-400">#123</span>
+                </div>
+              </div>
+
+              {/* 3. 미니 퀘스트 섹션 (DailyQuestPage 로직 적용) */}
+              <div className="w-full space-y-4 pt-2">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <ScrollText size={14} className="text-blue-500" /> Daily Missions
+                  </h3>
+                  <button 
+                    onClick={() => navigateTo('/quest')}
+                    className="text-[10px] font-bold text-blue-500 hover:text-blue-400 flex items-center gap-0.5 transition-colors"
+                  >
+                    VIEW ALL <ChevronRight size={12} />
+                  </button>
                 </div>
 
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-blue-400">→</span>
+                <div className="space-y-2">
+                  {isQuestLoading ? (
+                    <div className="flex justify-center py-4"><Loader2 className="animate-spin text-slate-700" size={20} /></div>
+                  ) : (
+                    topQuests.map((q: any) => (
+                      <div key={q.id} className="p-4 bg-slate-900/50 border border-white/5 rounded-2xl space-y-3">
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs font-bold text-slate-200 line-clamp-1">{q.title}</span>
+                          {q.isClaimed && <CheckCircle size={14} className="text-emerald-500" />}
+                        </div>
+                        {/* 미니 프로그레스 바 */}
+                        <div className="relative h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`absolute h-full transition-all duration-700 ${q.completed ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                            style={{ width: `${(q.currentValue / q.targetValue) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              </button>
-              <br/>
-              <div className="flex gap-4">
+              </div>
+
+              {/* 내비게이션 버튼 */}
+              <div className="space-y-3 pt-4">
                 <button 
-                  onClick={() => navigateTo('/rooms')}
-                  disabled={isPending}
-                  className="px-10 py-4 bg-blue-600 hover:bg-blue-500 hover:scale-105 active:scale-95 transition-all rounded-full font-bold shadow-xl shadow-blue-600/20 disabled:bg-blue-800"
+                  onClick={() => navigateTo('/user')}
+                  className="w-full flex items-center justify-between p-5 bg-slate-700 text-white rounded-2xl font-black text-sm hover:bg-blue-500 hover:text-white transition-all group"
                 >
-                  {isPending ? "이동 중..." : "게임 로비 입장"}
-                </button>
-                <button 
-                  onClick={handleLogout}
-                  className="px-6 py-4 bg-slate-800 hover:bg-slate-700 rounded-full text-sm font-medium transition-colors"
-                >
-                  로그아웃
+                  MY DASHBOARD
+                  <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
           ) : (
-             <div className="flex gap-4">
-                <button onClick={() => navigateTo('/auth/login')} className="px-10 py-4 bg-blue-600 hover:bg-blue-500 hover:scale-105 transition-all rounded-full font-bold shadow-xl shadow-blue-600/20">로그인</button>
-                <button onClick={() => navigateTo('/auth/signup')} className="px-10 py-4 bg-slate-700 hover:bg-slate-600 transition-all rounded-full font-bold">회원가입</button>
-             </div>
+            <div className="space-y-6">
+              <p className="text-slate-500 font-medium leading-relaxed">
+                보드게임의 세계에 오신 것을 환영합니다. <br/>로그인하여 여정을 시작하세요.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button onClick={() => navigateTo('/auth/login')} className="w-full py-4 bg-blue-600 rounded-2xl font-black hover:bg-blue-500 transition-all">SIGN IN</button>
+                <button onClick={() => navigateTo('/auth/signup')} className="w-full py-4 bg-slate-800 rounded-2xl font-black hover:bg-slate-700 transition-all text-slate-300 text-sm">CREATE ACCOUNT</button>
+              </div>
+            </div>
           )}
         </div>
-      </div>
-
-      {/* 하단 특징 섹션 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-20 text-sm text-slate-500 z-10">
-        {[
-          { title: "실시간 대전", desc: "Spring Boot 기반의 빠른 매칭" },
-          { title: "랭킹 시스템", desc: "승리하여 MMR을 올리세요" },
-          { title: "전략적 플레이", desc: "최고의 선택을 하세요" }
-        ].map((item, idx) => (
-          <div key={idx} className="p-5 border border-slate-800/50 bg-slate-900/50 backdrop-blur-sm rounded-2xl hover:border-slate-700 transition-colors">
-            <h3 className="font-bold text-slate-300 mb-1">{item.title}</h3>
-            <p>{item.desc}</p>
+        <br/>
+        {/* 하단 로그아웃 */}
+        {user && (
+          <div className="flex justify-start w-full"> 
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors font-black text-sm group"
+            >
+              <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
+              <span className="tracking-tighter">LOGOUT</span>
+            </button>
           </div>
-        ))}
+        )}
+      </aside>
+      {/* [우측/중앙] 메인 콘텐츠 영역 */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+        <div className="relative text-center space-y-8 max-w-3xl z-10">
+          <div className='space-y-3'>
+            <h1 className="text-8xl font-black tracking-tighter text-blue-500 drop-shadow-[0_0_20px_rgba(59,130,246,0.4)] italic">
+              BOARD GAME
+            </h1>
+            <p className="text-xl text-slate-400 font-medium tracking-widest uppercase">왈렁이의 Board Platform</p>
+          </div>
+
+          {/* Three.js 주사위 배치 영역 */}
+          <div className="py-10 flex justify-center gap-4 lg:gap-8 pointer-events-auto">
+            <FloatingDice/><FloatingDice/><FloatingDice/><FloatingDice/><FloatingDice/>
+          </div>
+
+          <div className="flex flex-col items-center gap-6">
+            <button 
+              onClick={() => navigateTo('/rooms')}
+              disabled={isPending}
+              className="group relative px-16 py-5 bg-blue-600 hover:bg-blue-500 hover:scale-105 active:scale-95 transition-all rounded-2xl font-black text-2xl shadow-[0_0_40px_rgba(59,130,246,0.3)] disabled:opacity-70 flex items-center gap-3"
+            >
+              {isPending ? <Loader2 className="animate-spin" /> : <Gamepad2 size={28} />}
+              {isPending ? "이동 중..." : "GAME START"}
+            </button>
+
+            {/* 특징 섹션 (가로 배치) */}
+            <div className="grid grid-cols-3 gap-6 pt-12 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              <div className="flex flex-col items-center gap-2">
+                <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></span>
+                실시간 대전
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></span>
+                랭킹 시스템
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></span>
+                전략 플레이
+              </div>
+            </div>
+
+            {/* 중앙 하단 약관 및 카피라이트 섹션 */}
+            <footer className="w-full max-w-2xl py-10 flex flex-col items-center gap-4 z-10">
+              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-800 to-transparent mb-2" />
+              
+              <div className="flex gap-6 text-[11px] font-bold tracking-widest uppercase">
+                <button 
+                  onClick={() => navigateTo('/terms')} 
+                  className="text-slate-500 hover:text-blue-400 transition-colors"
+                >
+                  Terms of Service
+                </button>
+                <button 
+                  onClick={() => navigateTo('/privacy')} 
+                  className="text-slate-400 hover:text-blue-400 transition-colors"
+                >
+                  Privacy Policy
+                </button>
+                <button 
+                  onClick={() => navigateTo('/cookie')}
+                  className="text-slate-500 hover:text-blue-400 transition-colors"
+                >
+                  Cookie Policy
+                </button>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-[10px] text-slate-600 font-medium tracking-tight">
+                  © 2026 <span className="text-slate-500 font-bold">WALRUNG.</span> All rights reserved.
+                </p>
+                <p className="text-[9px] text-slate-700">
+                  Board Platform for Strategy & Luck
+                </p>
+              </div>
+            </footer>
+          </div>
+        </div>
       </div>
     </main>
   );

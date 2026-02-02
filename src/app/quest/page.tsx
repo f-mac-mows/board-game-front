@@ -1,18 +1,34 @@
 "use client";
 
 import { useQuests } from '@/hooks/useQuests';
-import { Loader2, Gift, CheckCircle } from 'lucide-react';
+import { Loader2, Gift, CheckCircle, Home } from 'lucide-react';
+import {useRouter} from 'next/navigation';
 
 export default function DailyQuestPage() {
     const { quests, isLoading, claimReward, isClaiming } = useQuests();
+    const router = useRouter();
 
     if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-emerald-500" /></div>;
+
+    const returnToHome = () => {
+        router.push('/');
+    }
 
     return (
         <div className="max-w-2xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
             <header>
                 <h1 className="text-3xl font-black text-white italic tracking-tighter">DAILY MISSIONS</h1>
                 <p className="text-slate-500 text-sm mt-1">매일 새로운 미션을 완료하고 보상을 획득하세요.</p>
+                <button 
+                    onClick={returnToHome}
+                    className="ml-auto flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 rounded-xl transition-all group"
+                >
+                    <div className="w-2 h-2 rounded-full bg-blue-500 group-hover:animate-ping" />
+                    <span className="text-xs font-bold text-slate-400 group-hover:text-white uppercase tracking-tighter">
+                        Return Home
+                    </span>
+                    <Home size={16} className="text-slate-500 group-hover:text-blue-400" />
+                </button>
             </header>
 
             <div className="grid gap-4">
