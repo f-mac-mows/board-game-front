@@ -89,8 +89,9 @@ export const CategoryLabel: Record<ScoreCategory, string> = {
 
 // 서버 공통 에러 응답 규격
 export interface ErrorResponse {
-    errorCode: string;
+    code: GameErrorCode;
     message: string;
+    timestamp: string;
 }
 
 // 자주 발생하는 에러 코드 모음

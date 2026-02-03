@@ -1,3 +1,4 @@
+//utils/yatchCalculator.ts
 export const YachtCalculator = {
   calculateSum: (dice: number[]) => dice.reduce((a, b) => a + b, 0),
 
