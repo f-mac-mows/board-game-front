@@ -20,6 +20,10 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "sockjs-client": "^1.6.1",
     "three": "^0.182.0",
     "zustand": "^5.0.10"

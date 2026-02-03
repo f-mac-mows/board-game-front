@@ -57,7 +57,7 @@ export default function GameHistoryDetailPage() {
             </div>
 
             {/* 상단 BM 위젯 (기존과 동일) */}
-            <div className="p-6 bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20 rounded-[2.5rem] flex justify-between items-center">
+            <div className="p-6 bg-linear-to-br from-emerald-500/10 to-transparent border border-emerald-500/20 rounded-[2.5rem] flex justify-between items-center">
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
                         <Sparkles size={14} className="text-emerald-400" />
@@ -79,7 +79,7 @@ export default function GameHistoryDetailPage() {
                         const isExpanded = expandedId === h.gameId;
 
                         return (
-                            <div key={uniqueKey} className={`group flex flex-col bg-slate-900/40 rounded-[2rem] border ${isExpanded ? 'border-emerald-500/30 bg-slate-800/40' : 'border-white/5'} transition-all overflow-hidden`}>
+                            <div key={uniqueKey} className={`group flex flex-col bg-slate-900/40 rounded-4xl border ${isExpanded ? 'border-emerald-500/30 bg-slate-800/40' : 'border-white/5'} transition-all overflow-hidden`}>
                                 {/* 카드 헤더 (클릭 시 확장) */}
                                 <div 
                                     onClick={() => setExpandedId(isExpanded ? null : h.gameId)}
@@ -144,7 +144,7 @@ export default function GameHistoryDetailPage() {
                                         
                                         {/* 보상 유도 섹션은 로그 아래에 그대로 유지 */}
                                         {!h.rewarded && (
-                                            <div className="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-[1.5rem] flex items-center justify-between group">
+                                            <div className="mt-6 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl flex items-center justify-between group">
                                                 <p className="text-[10px] text-emerald-500/80 font-bold italic">
                                                     복기를 완료하셨나요? 보상을 2배로 챙기세요!
                                                 </p>

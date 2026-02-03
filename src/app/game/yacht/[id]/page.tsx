@@ -15,8 +15,6 @@ import {
 import { Stomp, CompatClient } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import Dice from "@/components/game/Dice";
-import { roomApi } from "@/api/rooms";
-import { authApi } from "@/api/auth";
 
 export default function YachtGamePage() {
     const { id } = useParams();
@@ -246,9 +244,9 @@ export default function YachtGamePage() {
     };
     
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-4 lg:p-8 flex flex-col lg:flex-row gap-8">
+        <div className="h-screen overflow-hidden bg-slate-950 text-white p-4 lg:p-8 flex flex-col lg:flex-row gap-8">
             {/* 좌측: 게임 플레이 영역 */}
-            <div className="flex-[2] flex flex-col gap-6">
+            <div className="flex-2 flex flex-col gap-6">
                 <header className="bg-slate-900 p-6 rounded-3xl border border-slate-800 flex justify-between items-center shadow-2xl">
                     <div>
                         <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Current Turn</p>
@@ -290,7 +288,7 @@ export default function YachtGamePage() {
                         className="group relative px-10 py-4 lg:px-16 lg:py-5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 rounded-2xl font-black text-xl lg:text-2xl transition-all shadow-xl overflow-hidden"
                     >
                         <span className="relative z-10">{isRolling ? "ROLLING..." : "ROLL DICE"}</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
                     </button>
                 </main>
             </div>
@@ -334,7 +332,7 @@ export default function YachtGamePage() {
                                         ${isFilled 
                                             ? 'bg-slate-950 border-transparent text-white' 
                                             : isMyTurn && remainingRolls < 3
-                                                ? previewScore != 0 ? 'bg-blue-500/10 border-blue-500/100 border-2 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400 cursor-pointer shadow-lg shadow-blue-500/20'
+                                                ? previewScore != 0 ? 'bg-blue-500/10 border-blue-500 border-2 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400 cursor-pointer shadow-lg shadow-blue-500/20'
                                                 : 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400 cursor-pointer shadow-lg shadow-blue-500/20'  : 'bg-slate-950 border-slate-800 text-slate-700'
                                         }
                                         

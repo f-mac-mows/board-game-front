@@ -99,7 +99,7 @@ export function LogSection({ gameId, gameType, nickname }: LogSectionProps) {
     return (
         <div 
             ref={scrollContainerRef}
-            className="relative space-y-1 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
+            className="relative space-y-1 max-h-125 overflow-y-auto pr-2 custom-scrollbar"
             style={{ overflowAnchor: 'none' }}
         >
             <div ref={topObserverRef} className="h-1 w-full" />

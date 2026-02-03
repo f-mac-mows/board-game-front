@@ -25,7 +25,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-blue-500/30">
       {/* 1. 상단 히어로 영역 */}
-      <div className="bg-gradient-to-b from-blue-900/20 to-slate-950 border-b border-slate-800/50">
+      <div className="bg-linear-to-b from-blue-900/20 to-slate-950 border-b border-slate-800/50">
         <div className="max-w-5xl mx-auto px-6 pt-12 lg:pt-16">
           <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6 lg:gap-8">
             
@@ -50,7 +50,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 <span className="flex items-center gap-1.5 text-blue-500">
                   <Milestone size={16} /> LV.{user.astat.level.toLocaleString()}
                 </span>
-                <span className="w-[1px] h-3 bg-slate-800" />
+                <span className="w-px h-3 bg-slate-800" />
                 <span className="text-slate-500 uppercase tracking-widest text-[11px]">
                   가입일: {new Date(user.createdAt).toLocaleDateString()}
                 </span>
@@ -93,7 +93,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                       
                       {/* 활성화 언더라인 */}
                       {isActive && (
-                        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-blue-500 rounded-t-full shadow-[0_-4px_12px_rgba(59,130,246,0.6)] z-20 animate-in fade-in zoom-in duration-300" />
+                        <div className="absolute bottom-0 left-0 right-0.75 bg-blue-500 rounded-t-full shadow-[0_-4px_12px_rgba(59,130,246,0.6)] z-20 animate-in fade-in zoom-in duration-300" />
                       )}
                     </Link>
                   );
