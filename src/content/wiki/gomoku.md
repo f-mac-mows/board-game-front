@@ -15,7 +15,7 @@
 
 ### 2. 흑(선공)의 금수 규칙 (Forbidden Moves)
 
-오목은 선공인 흑이 압도적으로 유리한 게임입니다. 이를 방정식으로 표현하면 흑의 승리 확률 $P(Black) \gg P(White)$가 성립하기 때문에, 흑에게는 다음과 같은 **금수(두면 안 되는 수)**가 적용됩니다.
+오목은 선공인 흑이 압도적으로 유리한 게임입니다. 이를 수식으로 표현하면 흑의 승리 확률 $P(\text{Black})$이 백의 승리 확률 $P(\text{White})$보다 월등히 높기 때문에, 흑에게는 다음과 같은 **금수(두면 안 되는 수)**가 적용됩니다.
 
 #### ① 3-3 금수
 한 수로 동시에 두 개의 **'열린 3'**을 만드는 것을 금지합니다. 
@@ -29,8 +29,10 @@
 - 반면, **백(후공)은 장목을 만들어도 승리로 인정**됩니다.
 
 $$
-\text{Black Victory} \iff \text{Count} = 5 \\
-\text{White Victory} \iff \text{Count} \geq 5
+\begin{aligned}
+\text{Black Victory} &\iff \text{Count} = 5 \\
+\text{White Victory} &\iff \text{Count} \geq 5
+\end{aligned}
 $$
 
 ---
@@ -53,7 +55,11 @@ $$
 오목의 승리는 보통 **4-3 유도**에서 나옵니다.
 
 $$
-\text{Success} = \exists \text{ Move } M \to \begin{cases} \text{Create } 4 & \text{(Forcing Response)} \\ \text{Create } 3 & \text{(Opening Victory)} \end{cases}
+\text{Success} = \exists \text{ Move } M \to 
+\begin{cases} 
+\text{Create } 4 & \text{(Forcing Response)} \\ 
+\text{Create } 3 & \text{(Opening Victory)} 
+\end{cases}
 $$
 
 1. **중앙 점유**: 첫 수부터 중앙을 중심으로 돌을 넓게 퍼뜨리세요. 외곽으로 밀려날수록 공격 루트($L$)가 제한됩니다.

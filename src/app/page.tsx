@@ -67,6 +67,20 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* 위키 페이지 */}
+          <div className="pt-4 space-y-3"> {/* 간격을 위해 space-y-3 추가 */}
+            <button 
+              onClick={() => navigateTo('/wiki')} //  위키로 이동
+              className="w-full flex items-center justify-between p-5 bg-slate-900 border border-white/5 text-slate-300 rounded-2xl font-black text-xs hover:bg-slate-800 hover:text-blue-400 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <ScrollText size={18} className="text-blue-500" />
+                <span>GAME WIKI</span>
+              </div>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
           {user ? (
             <div className="space-y-8">
               <div className="flex flex-col items-center space-y-4 text-center">
