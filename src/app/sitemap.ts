@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 import { GAME_TYPE_CONFIG } from '@/types/rooms';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://walrung.ddns.net'; // 실제 도메인으로 변경하세요
+  const baseUrl = 'https://walrung.com';
 
   // 1. 위키 상세 페이지들 생성
   const wikiUrls = Object.keys(GAME_TYPE_CONFIG).map((type) => ({

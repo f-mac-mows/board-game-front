@@ -39,7 +39,7 @@ export const useUserStore = create<UserState>()(
 
                 // 쿠키 삭제
                 const deleteCookie = (name: string) => {
-                    const domains = ['.walrung.ddns.net', 'walrung.ddns.net', ''];
+                    const domains = ['.walrung.com', 'walrung.com', ''];
                     domains.forEach(domain => {
                         const domainPart = domain ? `domain=${domain};` : '';
                         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; ${domainPart}`;

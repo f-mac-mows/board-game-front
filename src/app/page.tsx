@@ -53,7 +53,7 @@ export default function HomePage() {
       {/* 2. [좌측] 프로필 사이드바 - 반응형 클래스 추가 */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-[320px] sm:w-[380px] border-r border-slate-800/50 bg-slate-900 lg:bg-slate-900/20 backdrop-blur-3xl p-10 
+        w-[320px] sm:w-95 border-r border-slate-800/50 bg-slate-900 lg:bg-slate-900/20 backdrop-blur-3xl p-10 
         flex flex-col justify-between transition-transform duration-300 ease-in-out
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -71,8 +71,8 @@ export default function HomePage() {
             <div className="space-y-8">
               <div className="flex flex-col items-center space-y-4 text-center">
                 <div className="relative group w-20 h-20 lg:w-24 lg:h-24">
-                  <div className="absolute inset-0 bg-blue-500 rounded-[32px] blur-2xl opacity-20 transition-opacity"></div>
-                  <div className="relative w-full h-full bg-slate-800 border border-slate-700 rounded-[32px] flex items-center justify-center">
+                  <div className="absolute inset-0 bg-blue-500 rounded-4xl blur-2xl opacity-20 transition-opacity"></div>
+                  <div className="relative w-full h-full bg-slate-800 border border-slate-700 rounded-4xl flex items-center justify-center">
                     <User size={40} className="text-blue-500" />
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export default function HomePage() {
             </div>
 
             <footer className="w-full pt-10 flex flex-col items-center gap-4 text-center">
-              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-800 to-transparent mb-2" />
+              <div className="h-px w-full bg-linear-to-r from-transparent via-slate-800 to-transparent mb-2" />
               <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] font-bold tracking-widest uppercase">
                 <button onClick={() => navigateTo('/terms')} className="text-slate-500">Terms</button>
                 <button onClick={() => navigateTo('/privacy')} className="text-slate-400">Privacy</button>

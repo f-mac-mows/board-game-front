@@ -63,7 +63,7 @@ export default function GameRoomPage() {
     useEffect(() => {
         if (!roomId || isNaN(roomId) || !user) return;
 
-        const socket = new SockJS(`https://walrung.ddns.net/ws-game`);
+        const socket = new SockJS(`https://walrung.com/ws-game`);
         const client = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: 5000,
@@ -219,7 +219,7 @@ export default function GameRoomPage() {
                 </div>
 
                 {/* 채팅 영역 */}
-                <div className="bg-slate-900 rounded-3xl border border-slate-800 flex flex-col h-[500px] overflow-hidden">
+                <div className="bg-slate-900 rounded-3xl border border-slate-800 flex flex-col h-125 overflow-hidden">
                     <div className="flex-1 p-5 overflow-y-auto space-y-4 scroll-smooth" ref={scrollRef}>
                         {messages.map((m, i) => (
                             <div key={i} className={`flex flex-col ${m.type === 'TALK' ? (m.sender === user?.nickname ? 'items-end' : 'items-start') : 'items-center'}`}>

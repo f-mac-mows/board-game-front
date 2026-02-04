@@ -84,9 +84,9 @@ export default function UserStatusPage() {
                         <button 
                             key={stat.gameType}
                             onClick={() => setSelectedStat(stat)}
-                            className={`relative group flex flex-col p-6 bg-slate-900/40 border ${tier.border} rounded-[2rem] hover:bg-slate-800/60 transition-all text-left overflow-hidden shadow-lg`}
+                            className={`relative group flex flex-col p-6 bg-slate-900/40 border ${tier.border} rounded-4xl hover:bg-slate-800/60 transition-all text-left overflow-hidden shadow-lg`}
                         >
-                            <div className={`absolute inset-0 bg-gradient-to-br ${tier.color} to-transparent opacity-40`} />
+                            <div className={`absolute inset-0 bg-linear-to-br ${tier.color} to-transparent opacity-40`} />
                             <div className="relative z-10 flex flex-col h-full w-full">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-2.5 bg-slate-950/80 rounded-2xl shadow-inner">{tier.icon}</div>
@@ -152,7 +152,7 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-slate-900 border border-white/5 w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl">
                 <div className="p-8 flex justify-between items-center bg-white/5 border-b border-white/5">
                     <div>
@@ -178,7 +178,7 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
                         </div>
                         <div className="h-4 w-full bg-black rounded-full border border-white/10 p-0.5 relative overflow-hidden">
                             <div 
-                                className="h-full rounded-full bg-gradient-to-r from-emerald-800 via-emerald-500 to-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.5)] transition-all duration-1000 ease-out"
+                                className="h-full rounded-full bg-linear-to-r from-emerald-800 via-emerald-500 to-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.5)] transition-all duration-1000 ease-out"
                                 style={{ width: `${progressPercent}%` }}
                             />
                         </div>
@@ -211,6 +211,20 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
                         <div className="space-y-2">
                             {recentMatches.length > 0 ? recentMatches.map((m) => {
                                 const style = getStyle(m.result);
+                                const formatMatchDate = (dateStr: string) => {
+                                    // 끝에 Z가 없다면 붙여서 UTC임을 명시
+                                    const date = new Date(dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`);
+                                    
+                                    // 날짜와 시간을 같이 보여주면 더 정확합니다 (예: 2026. 2. 4. 17:05)
+                                    return date.toLocaleString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        hour12: false
+                                    });
+                                };
+                                                        
                                 return (
                                     <button 
                                         key={m.id}
@@ -222,7 +236,7 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
                                             <span className={`text-xs font-black ${style.text}`}>{m.result}</span>
                                         </div>
                                         <div className="flex items-center gap-2 font-mono">
-                                            <span className="text-[10px] text-slate-600 font-bold italic">{new Date(m.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-[10px] text-slate-600 font-bold italic">{formatMatchDate(m.createdAt)}</span>
                                             <ChevronRight size={12} className="text-slate-800 group-hover:text-emerald-500" />
                                         </div>
                                     </button>

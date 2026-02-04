@@ -149,7 +149,7 @@ export default function SignUpPage() {
     // 4. Google OAuth2 로그인 핸들러
     const handleGoogleLogin = () => {
         // 백엔드에서 설정한 OAuth2 엔드포인트로 리다이렉트
-        window.location.href = `https://walrung.ddns.net/oauth2/authorization/google`;
+        window.location.href = `https://walrung.com/oauth2/authorization/google`;
     };
 
     return (

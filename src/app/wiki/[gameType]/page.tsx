@@ -47,7 +47,7 @@ export default async function WikiDetailPage({
       <MetaTag 
         title={`${config.description} 가이드`}
         description={`${config.description}의 모든 것`}
-        url={`https://walrung.ddns.net/wiki/${gameType}`}
+        url={`https://walrung.com/wiki/${gameType}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Game",

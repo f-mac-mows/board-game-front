@@ -11,8 +11,10 @@ export function useLogs(gameId: number | null, gameType: GameTypeCode | null, is
             logApi.getLogs(gameType!, gameId!, pageParam as string | undefined),
         initialPageParam: undefined,
         getNextPageParam: (lastPage) => {
+            // 더 이상 가져올 로그가 없으면 종료
             if (!lastPage || lastPage.length < 20) return undefined;
-            // 리스트의 마지막(가장 최근) ID를 커서로 사용
+            
+            // [핵심] 정방향이므로 현재 페이지의 마지막 요소(가장 큰 ID)를 커서로 사용
             return lastPage[lastPage.length - 1].id; 
         },
         enabled: isEnabled && !!gameId && !!gameType,
