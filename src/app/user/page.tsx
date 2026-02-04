@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from 'react';
-import { useUserStore } from '@/store/useUserStore';
 import { useAchievements } from '@/hooks/useAchievements';
 import { 
     Wallet, 
@@ -13,9 +12,10 @@ import {
     Zap,
     Trophy
 } from 'lucide-react';
+import { useMe } from '@/hooks/useMe';
 
 export default function UserProfilePage() {
-    const { user } = useUserStore();
+    const { data: user, isLoading: isUserLoading } = useMe();
     const { achievements, isLoading: isAchLoading } = useAchievements();
 
     /**
@@ -58,7 +58,7 @@ export default function UserProfilePage() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             
             {/* [Section 0] 종합 레벨 & 경험치 프로그레스 */}
-            <section className="relative overflow-hidden bg-slate-900 border border-slate-800 rounded-[2rem] p-8 shadow-2xl">
+            <section className="relative overflow-hidden bg-slate-900 border border-slate-800 rounded-4xl p-8 shadow-2xl">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full" />
                 
                 <div className="relative z-10">
@@ -68,7 +68,7 @@ export default function UserProfilePage() {
                                 <Zap size={14} className="fill-emerald-500" /> Account Progression
                             </p>
                             <h2 className="text-5xl font-black text-white tracking-tighter">
-                                LV. <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                                LV. <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-cyan-400">
                                     {stats.level}
                                 </span>
                             </h2>
@@ -86,7 +86,7 @@ export default function UserProfilePage() {
 
                     <div className="w-full bg-slate-950 h-5 rounded-2xl border border-white/5 p-1 shadow-inner">
                         <div 
-                            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 rounded-xl transition-all duration-1000 ease-out relative group"
+                            className="h-full bg-linear-to-r from-emerald-500 via-teal-400 to-cyan-500 rounded-xl transition-all duration-1000 ease-out relative group"
                             style={{ width: `${stats.percent}%` }}
                         >
                             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
@@ -102,7 +102,7 @@ export default function UserProfilePage() {
                     <Wallet size={16} /> Asset Overview
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] relative overflow-hidden group hover:border-yellow-500/50 transition-all">
+                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-4xl relative overflow-hidden group hover:border-yellow-500/50 transition-all">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500">
                             <CoinsIcon size={100} className="text-yellow-500" />
                         </div>
@@ -115,7 +115,7 @@ export default function UserProfilePage() {
                         </div>
                     </div>
 
-                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] relative overflow-hidden group hover:border-blue-500/50 transition-all">
+                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-4xl relative overflow-hidden group hover:border-blue-500/50 transition-all">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500">
                             <Sparkles size={100} className="text-blue-500" />
                         </div>
@@ -136,7 +136,7 @@ export default function UserProfilePage() {
                     <h3 className="text-sm font-black mb-4 flex items-center gap-2 text-slate-500 uppercase tracking-widest">
                         <Award size={16} /> Recent Milestones
                     </h3>
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] p-3 backdrop-blur-sm">
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-4xl p-3 backdrop-blur-sm">
                         <div className="space-y-2">
                             {isAchLoading ? (
                                 <div className="p-10 text-center text-slate-600 animate-pulse text-sm">업적 로드 중...</div>
@@ -172,7 +172,7 @@ export default function UserProfilePage() {
                     <h3 className="text-sm font-black mb-4 flex items-center gap-2 text-slate-500 uppercase tracking-widest">
                         <TrendingUp size={16} /> Global Status
                     </h3>
-                    <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-900/20 border border-slate-800 rounded-[2rem] p-8 text-center relative overflow-hidden group">
+                    <div className="bg-linear-to-br from-slate-900 via-slate-900 to-emerald-900/20 border border-slate-800 rounded-4xl p-8 text-center relative overflow-hidden group">
                         <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">Current Rank</p>
                         <h4 className="text-5xl font-black mt-4 text-white italic">#1,248</h4>
                         <div className="mt-8 space-y-4">

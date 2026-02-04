@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // 2. 기본 페이지들 (메인, 위키 목록 등)
-  const routes = ['', '/wiki'].map((route) => ({
+  const routes = ['', '/wiki', '/privacy', '/terms', '/cookie'].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: 'daily' as const,
