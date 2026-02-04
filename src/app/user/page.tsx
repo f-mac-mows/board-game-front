@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useAchievements } from '@/hooks/useAchievements';
+import MiniRankingWidget from '@/components/user/MiniRankingWidget';
 import { 
     Wallet, 
     Sparkles, 
@@ -168,24 +169,7 @@ export default function UserProfilePage() {
                 </div>
 
                 {/* [Section 3] 랭킹 섹션 */}
-                <div>
-                    <h3 className="text-sm font-black mb-4 flex items-center gap-2 text-slate-500 uppercase tracking-widest">
-                        <TrendingUp size={16} /> Global Status
-                    </h3>
-                    <div className="bg-linear-to-br from-slate-900 via-slate-900 to-emerald-900/20 border border-slate-800 rounded-4xl p-8 text-center relative overflow-hidden group">
-                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">Current Rank</p>
-                        <h4 className="text-5xl font-black mt-4 text-white italic">#1,248</h4>
-                        <div className="mt-8 space-y-4">
-                            <div className="flex justify-between items-center text-sm bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                                <span className="text-slate-500 font-bold">Percentile</span>
-                                <span className="text-emerald-400 font-black text-lg">TOP 14%</span>
-                            </div>
-                            <button className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2">
-                                리더보드 전체보기 <ChevronRight size={14} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <MiniRankingWidget />
             </div>
         </div>
     );

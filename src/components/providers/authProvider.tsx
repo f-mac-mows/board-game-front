@@ -13,7 +13,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   // 1. 현재 경로가 보호된 경로인지 계산 (Memo로 성능 최적화)
   const isProtectedPath = useMemo(() => {
-    const protectedPrefixes = ["/rooms", "/game", "/set-nickname", "/user"];
+    const protectedPrefixes = ["/rooms", "/game", "/set-nickname", "/user", "/ranking"];
     return protectedPrefixes.some(path => 
       pathname === path || pathname.startsWith(`${path}/`)
     );
