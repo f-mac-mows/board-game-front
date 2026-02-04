@@ -6,11 +6,12 @@ import QueryProvider from "@/components/providers/queryProvider";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://walrung.com'),
   title: {
-    default: "Walrung Online | 실시간 보드게임",
-    template: "%s | Walrung Online",
+    default: "왈렁 온라인 | 실시간 보드게임 플랫폼",
+    template: "%s | 왈렁 온라인",
   },
-  description: "야추, 오목, 원카드, 블랙잭! 왈렁이와 멍낑이랑 실시간 보드 게임을 즐겨보세요.",
+  description: "야추, 오목, 원카드, 블랙잭! 왈렁이와 멍낑이랑 다양한 실시간 보드 게임을 즐겨보세요.",
   // ✨ 구글/네이버 인증 코드 삽입 (도메인 결정 후 발급받아 교체)
   verification: {
     google: "GOOGLE_VERIFICATION_CODE",
@@ -20,6 +21,22 @@ export const metadata: Metadata = {
   },
   // ✨ 검색 로봇 설정
   robots: "index, follow",
+  openGraph: {
+    title: '왈렁 온라인 | 실시간 보드게임 플랫폼',
+    description: '웹에서 즐기는 야추, 오목, 블랙잭. 지금 접속해서 전 세계 유저와 대결하세요!',
+    url: 'https://walrung.com',
+    siteName: 'Walrung Online',
+    images: [
+      {
+        url: '/main-og.webp',
+        width: 1200,
+        height: 630,
+        alt: '왈렁 온라인 메인 이미지',
+      },
+    ],
+    locale: 'ko_KR',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

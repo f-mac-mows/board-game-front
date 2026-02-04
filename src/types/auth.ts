@@ -24,6 +24,7 @@ export interface AccountStat {
     level: number;
     currentExp: number;
     requiredExp: number;
+    totalGamesPlayed: number;
 }
 
 export interface AssetInfo {
@@ -35,6 +36,7 @@ export interface StatInfo {
     gameType: GameTypeCode;
     level: number;
     exp: number;
+    requiredExp: number;
     mmr: number;
     wins: number;
     draws: number;

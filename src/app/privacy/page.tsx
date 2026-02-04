@@ -5,7 +5,7 @@ import { ArrowLeft, ShieldCheck, Lock, Eye, Trash2, Cookie } from 'lucide-react'
 
 export default function PrivacyPolicyPage() {
   const router = useRouter();
-  const SERVICE_NAME = "Board Platform"; // TODO 이름 수정
+  const SERVICE_NAME = "Walrung Online";
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-300 p-6 md:p-12 lg:p-20 font-sans selection:bg-blue-500/30">
@@ -29,7 +29,7 @@ export default function PrivacyPolicyPage() {
           </div>
         </header>
 
-        <div className="h-[1px] w-full bg-gradient-to-r from-slate-800 via-slate-700 to-transparent" />
+        <div className="h-px w-full bg-linear-to-r from-slate-800 via-slate-700 to-transparent" />
 
         {/* 정책 본문 섹션 */}
         <div className="space-y-10 text-sm md:text-base leading-relaxed">
@@ -113,12 +113,12 @@ export default function PrivacyPolicyPage() {
               <h3>5. 개인정보 보호책임자</h3>
             </div>
             <p className="text-sm">이름: 왈렁</p>
-            <p className="text-sm">이메일: <span className="text-blue-400 hover:underline cursor-pointer">[f.mac.mows@gmail.com]</span></p>
+            <p className="text-sm">이메일: <span className="text-blue-400 hover:underline cursor-pointer">[walrung.board@gmail.com]</span></p>
           </section>
         </div>
 
         {/* 푸터 영역 */}
-        <footer className="pt-10 pb-20 border-t border-slate-900 text-center">
+        <footer className="pt-10 pb-15 border-t border-slate-900 text-center">
           <p className="text-[11px] font-bold text-slate-600 tracking-widest uppercase italic">
             © 2026 {SERVICE_NAME}. Protection of User Data is Our Priority.
           </p>

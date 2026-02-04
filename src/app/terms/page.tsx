@@ -5,7 +5,7 @@ import { ArrowLeft, Gavel, Scale, Ban, AlertTriangle, ShieldAlert } from 'lucide
 
 export default function TermsOfServicePage() {
   const router = useRouter();
-  const SERVICE_NAME = "Board Platform"; // TODO 이름 수정
+  const SERVICE_NAME = "Walrung Online";
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-300 p-6 md:p-12 lg:p-20 font-sans selection:bg-blue-500/30">
@@ -29,7 +29,7 @@ export default function TermsOfServicePage() {
           </div>
         </header>
 
-        <div className="h-[1px] w-full bg-gradient-to-r from-slate-800 via-slate-700 to-transparent" />
+        <div className="h-px w-full bg-linear-to-r from-slate-800 via-slate-700 to-transparent" />
 
         {/* 본문 섹션 */}
         <div className="space-y-12 text-sm md:text-base leading-relaxed">
@@ -112,7 +112,7 @@ export default function TermsOfServicePage() {
         </div>
 
         {/* 푸터 영역 */}
-        <footer className="pt-10 pb-20 border-t border-slate-900 text-center">
+        <footer className="pt-10 pb-15 border-t border-slate-900 text-center">
           <p className="text-[11px] font-bold text-slate-600 tracking-widest uppercase italic">
             © 2026 {SERVICE_NAME}. Fair Play & Respect Others.
           </p>

@@ -3,22 +3,55 @@ import { GAME_TYPE_CONFIG, GameTypeCode } from "@/types/rooms";
 import MdReader from "@/components/common/MdReader";
 import MetaTag from "@/components/common/MetaTag";
 import { getWikiContent } from "@/lib/wiki";
+import { Metadata } from "next";
 
-// 1. Metadata 부분도 await 적용
+// 1. Metadata 생성 - SEO 최적화
 export async function generateMetadata({ 
   params 
 }: { 
   params: Promise<{ gameType: string }> 
-}) {
+}): Promise<Metadata> {
   const { gameType } = await params;
   const type = gameType.toUpperCase() as GameTypeCode;
   const config = GAME_TYPE_CONFIG[type];
 
   if (!config) return { title: "Walrung Online" };
 
+  const title = `${config.description} 가이드 및 승리 전략 - 왈렁 온라인`;
+  const description = `${config.description}의 규칙, 금수 규정, 고급 전략을 확인하고 실력을 향상시키세요.`;
+  const url = `https://walrung.com/wiki/${gameType.toLowerCase()}`;
+
+  // 💡 방어 로직: 이미지가 있는 게임만 특정 이미지를 쓰고, 나머지는 공통 이미지 사용
+  // (나중에 모든 이미지를 다 그리시면 이 조건문을 없애고 바로 `${gameType}.webp`를 쓰시면 됩니다!)
+  const hasCustomOg = ["yacht", "gomoku"].includes(gameType.toLowerCase());
+  const ogImage = hasCustomOg 
+    ? `/images/og/${gameType.toLowerCase()}.webp` 
+    : `/main-og.webp`; // public 폴더 루트에 있는 메인 이미지
+
   return {
-    title: `${config.description} 가이드 - Walrung Online`,
-    description: `${config.description}의 상세 규칙과 전략을 확인하세요.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "article",
+      siteName: "왈렁 온라인",
+      images: [
+        { 
+          url: ogImage,
+          width: 1200,
+          height: 630,
+        }
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 
@@ -28,10 +61,8 @@ export default async function WikiDetailPage({
 }: { 
   params: Promise<{ gameType: string }> 
 }) {
-  // 핵심: params 자체를 await로 먼저 풀어줍니다.
   const { gameType } = await params;
 
-  // 값이 없거나 이상할 경우 방어 코드
   if (!gameType) return notFound();
 
   const type = gameType.toUpperCase() as GameTypeCode;
@@ -42,21 +73,46 @@ export default async function WikiDetailPage({
     notFound();
   }
 
+  // 검색 엔진용 구조화 데이터 (JSON-LD)
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle", // 가이드 문서에 적합한 타입
+    "headline": `${config.description} 공식 가이드`,
+    "description": `${config.description} 게임의 규칙과 전략에 대한 상세 설명`,
+    "author": {
+      "@type": "Organization",
+      "name": "왈렁 온라인"
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://walrung.com/wiki/${gameType.toLowerCase()}`
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-12">
+      {/* 클라이언트 사이드 태그 주입 (JSON-LD 전용) */}
       <MetaTag 
         title={`${config.description} 가이드`}
         description={`${config.description}의 모든 것`}
-        url={`https://walrung.com/wiki/${gameType}`}
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "Game",
-          "name": config.description
-        }}
+        url={`https://walrung.com/wiki/${gameType.toLowerCase()}`}
+        jsonLd={jsonLd}
       />
 
-      <article className="max-w-3xl mx-auto">
-        <MdReader content={content} />
+      <article className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* 헤더 섹션 디자인 보강 */}
+        <header className="mb-12 border-b border-slate-900 pb-8">
+          <span className="text-blue-500 text-[10px] font-black tracking-[0.4em] uppercase mb-2 block">
+            Official Wiki
+          </span>
+          <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase">
+            {config.description}
+          </h1>
+        </header>
+
+        <section className="prose prose-invert prose-slate max-w-none">
+          <MdReader content={content} />
+        </section>
       </article>
     </div>
   );

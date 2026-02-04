@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import FloatingDice from '@/components/home/FloatingDice';
 import { authApi } from '@/api/auth';
 import { useQuests } from '@/hooks/useQuests';
-import { User, Loader2, LogOut, ChevronRight, Gamepad2, CheckCircle, ScrollText, Menu, X } from 'lucide-react';
+import { User, Loader2, LogOut, ChevronRight, Gamepad2, CheckCircle, ScrollText, Menu, X, AlertTriangle } from 'lucide-react';
 import { UserBadge } from '@/components/user/UserBadge';
 
 export default function HomePage() {
@@ -41,6 +41,16 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen flex bg-slate-950 text-white overflow-x-hidden relative">
+      
+      {/* ⚠️ 개발 공지 배너 (상단 고정) */}
+      <div className="fixed top-0 left-0 right-0 z-60 bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-md px-4 py-2">
+        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-amber-500">
+          <AlertTriangle size={14} className="shrink-0" />
+          <p className="text-[10px] sm:text-xs font-black tracking-tight uppercase">
+            Development Phase: 데이터베이스 점검 및 업데이트 중 데이터가 초기화될 수 있습니다.
+          </p>
+        </div>
+      </div>
       
       {/* 1. 모바일 햄버거 버튼 (lg 미만에서만 표시) */}
       <button 
@@ -162,10 +172,16 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-8 relative min-h-screen overflow-y-auto">
         <div className="relative text-center space-y-6 lg:space-y-12 max-w-full lg:max-w-3xl z-10 py-20 lg:py-0">
           <div className='space-y-3'>
+
+            {/* BETA 배지 추가 */}
+            <div className="inline-block px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-4">
+              <span className="text-blue-500 text-[10px] font-black tracking-[0.2em] uppercase">Open Beta v0.1</span>
+            </div>
+
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-blue-500 drop-shadow-[0_0_20px_rgba(59,130,246,0.4)] italic">
-              BOARD GAME
+              WALRUNG ONLINE
             </h1>
-            <p className="text-sm lg:text-xl text-slate-400 font-medium tracking-widest uppercase px-4">왈렁이의 Board Platform</p>
+            <p className="text-sm lg:text-xl text-slate-400 font-medium tracking-widest uppercase px-4">왈렁이의 Board Game Platform</p>
           </div>
 
           {/* 주사위 (모바일에서는 간격 및 크기 조절) */}
@@ -174,6 +190,13 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col items-center gap-6 w-full px-4">
+
+            {/* 개발 안내 문구 추가 */}
+             <p className="text-[11px] text-red-500 font-bold max-w-xs leading-relaxed opacity-80">
+                현재 시스템 최적화 작업 중입니다. <br/>
+                랭킹 및 보유 아이템 데이터는 예고 없이 변경될 수 있습니다.
+             </p>
+
             <button 
               onClick={() => navigateTo('/rooms')}
               className="w-full lg:w-auto group px-12 lg:px-16 py-5 bg-blue-600 rounded-2xl font-black text-xl lg:text-2xl shadow-xl flex items-center justify-center gap-3"

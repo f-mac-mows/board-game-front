@@ -43,6 +43,15 @@
   --foreground: #ededed;
 }
 
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    margin: 0;
+    padding: 0;
+  }
+}
+
 /* MdReader에 사용되는 스타일 최적화 */
 .md-content h1 { @apply text-4xl font-black mb-6 text-blue-500; }
 .md-content h2 { @apply text-2xl font-bold mb-4 border-b border-slate-800 pb-2; }
@@ -101,4 +110,31 @@
 /* 인라인 수식 색상 */
 .katex {
   @apply text-blue-400;
+}
+
+::-webkit-scrollbar {
+  width: 8px; /* 스크롤바 두께 */
+}
+
+::-webkit-scrollbar-track {
+  background: #020617; /* 배경색과 맞춤 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b; /* 살짝 밝은 네이비 */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+  image-rendering: pixelated; /* 도트가 뭉개지지 않게 */
 }

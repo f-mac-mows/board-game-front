@@ -6,7 +6,7 @@ import { ArrowLeft, Cookie, ShieldCheck, BarChart3, Settings, MousePointer2 } fr
 
 export default function CookiePolicyPage() {
   const router = useRouter();
-  const SERVICE_NAME = "Board Platform"; // TODO 이름 수정
+  const SERVICE_NAME = "Walrung Online"; // TODO 이름 수정
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-300 p-6 md:p-12 lg:p-20 font-sans selection:bg-blue-500/30">
@@ -30,7 +30,7 @@ export default function CookiePolicyPage() {
           </div>
         </header>
 
-        <div className="h-[1px] w-full bg-gradient-to-r from-slate-800 via-slate-700 to-transparent" />
+        <div className="h-px w-full bg-linear-to-r from-slate-800 via-slate-700 to-transparent" />
         
         <br/>
         {/* 본문 섹션 */}
@@ -55,7 +55,7 @@ export default function CookiePolicyPage() {
             
             <div className="grid gap-4">
               {/* 필수적 쿠키 */}
-              <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] space-y-3">
+              <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-4xl space-y-3">
                 <div className="flex items-center gap-2 text-blue-400 font-black italic tracking-tight">
                   <ShieldCheck size={18} /> Essential Cookies
                 </div>
@@ -65,7 +65,7 @@ export default function CookiePolicyPage() {
               </div>
 
               {/* 분석 및 성능 쿠키 */}
-              <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] space-y-3">
+              <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-4xl space-y-3">
                 <div className="flex items-center gap-2 text-emerald-400 font-black italic tracking-tight">
                   <BarChart3 size={18} /> Performance & Analytics
                 </div>
@@ -75,7 +75,7 @@ export default function CookiePolicyPage() {
               </div>
 
               {/* 광고 쿠키 */}
-              <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] space-y-3">
+              <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-4xl space-y-3">
                 <div className="flex items-center gap-2 text-indigo-400 font-black italic tracking-tight">
                   <MousePointer2 size={18} /> Advertising (Google AdSense)
                 </div>
@@ -109,7 +109,7 @@ export default function CookiePolicyPage() {
         </div>
 
         {/* 푸터 영역 */}
-        <footer className="pt-10 pb-20 border-t border-slate-900 text-center">
+        <footer className="pt-10 pb-15 border-t border-slate-900 text-center">
           <p className="text-[11px] font-bold text-slate-600 tracking-widest uppercase italic">
             © 2026 {SERVICE_NAME}. We Value Your Privacy Options.
           </p>

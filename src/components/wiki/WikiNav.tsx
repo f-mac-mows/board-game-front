@@ -10,7 +10,7 @@ export default function WikiNav() {
 
   return (
     <nav className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-8 overflow-x-auto no-scrollbar">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-8 overflow-x-auto">
         {/* 홈으로 돌아가기 */}
         <Link 
           href="/" 
