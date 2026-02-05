@@ -15,7 +15,7 @@ const nextConfig = {
   experimental: {
     // Nginx가 전달해주는 호스트 이름을 Next.js가 신뢰하도록 설정
     serverActions: {
-      allowedOrigins: ["walrung.ddns.net", "localhost:3000"]
+      allowedOrigins: ["walrung.com", "localhost:3000"]
     }
   },
 
@@ -24,7 +24,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'walrung.ddns.net',
+        hostname: 'walrung.com',
       },
     ],
   },
