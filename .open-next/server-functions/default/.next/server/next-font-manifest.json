@@ -1,8 +1,0 @@
-{
-  "app": {
-    "[project]/src/app/wiki/[gameType]/page": []
-  },
-  "appUsingSizeAdjust": false,
-  "pages": {},
-  "pagesUsingSizeAdjust": false
-}

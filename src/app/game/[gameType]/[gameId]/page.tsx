@@ -1,3 +1,4 @@
+// /app/game/[gameType]/[gameId]/page.tsx
 "use client";
 
 import { useParams } from "next/navigation";
@@ -18,7 +19,7 @@ export default function GamePage() {
         default:
             return (
                 <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-                    <p>알 수 없는 게임 타입입니다: {gameType}</p>
+                    <p>타입 불일치: [{gameType}] (길이: {gameType.length})</p>
                 </div>
             );
     }
