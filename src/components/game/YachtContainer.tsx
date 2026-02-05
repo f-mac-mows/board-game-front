@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { yachtApi } from "@/api/yacht";
 import { useUserStore } from "@/store/useUserStore";
@@ -12,15 +12,13 @@ import {
     CategoryLabel, 
     GameResult
 } from "@/types/game";
-import { Stomp, CompatClient } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
 import Dice from "@/components/game/Dice";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 
-export default function YachtGamePage() {
+export default function YachtGamePage({ gameId }: { gameId: string}) {
     const { id } = useParams();
-    const gameId = Number(id);
     const router = useRouter();
+    const numericGameId = Number(gameId);
     const { user } = useUserStore();
     const { subscribe, isConnected } = useWebSocket();
 
@@ -40,7 +38,7 @@ export default function YachtGamePage() {
     // --- 초기 데이터 동기화 ---
     const syncGameStatus = useCallback(async () => {
         try {
-            const res = await yachtApi.syncGame(gameId);
+            const res = await yachtApi.syncGame(numericGameId);
             const { status, scoreCards } = res.data;
             if (scoreCards) setScoreCards(scoreCards);
             if (status) {
@@ -96,7 +94,7 @@ export default function YachtGamePage() {
                     // 3. 0회일 때 Keep 초기화 및 서버 전송
                     if (event.data.remainingRolls === 0) {
                         setKeepIndices([]);
-                        yachtApi.updateKeep(gameId, []); 
+                        yachtApi.updateKeep(numericGameId, []); 
                     }
                 });
                 break;
@@ -151,7 +149,7 @@ export default function YachtGamePage() {
         if (currentTurn !== user?.nickname || remainingRolls <= 0 || isRolling) return;
 
         try {
-            await yachtApi.rollDice(gameId, keepIndices);
+            await yachtApi.rollDice(numericGameId, keepIndices);
         } catch (err: any) {
             alert(err.response?.data?.message || "굴리기 실패");
         }
@@ -160,7 +158,7 @@ export default function YachtGamePage() {
     const handleRecordScore = async (category: ScoreCategory) => {
         if (currentTurn !== user?.nickname || isRolling) return;
         try {
-            await yachtApi.recordScore(gameId, category);
+            await yachtApi.recordScore(numericGameId, category);
         } catch (err: any) {
             alert(err.response?.data?.message || "기록 실패");
         }
@@ -215,7 +213,7 @@ export default function YachtGamePage() {
 
         // 2. 서버에 Keep 상태 전송 (상대방에게 브로드캐스트 요청)
         try {
-            await yachtApi.updateKeep(gameId, newIndices);
+            await yachtApi.updateKeep(numericGameId, newIndices);
         } catch (err) {
             console.error("Keep 전송 실패:", err);
         }

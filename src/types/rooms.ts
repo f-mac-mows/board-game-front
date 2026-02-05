@@ -75,6 +75,7 @@ export interface RoomDetailResponse {
     roomId: number;
     title: string;
     status: GameStatus;
+    gameTpye: GameTypeCode;
     currentGameId: number;
     players: PlayerInfoResponse[];
 }

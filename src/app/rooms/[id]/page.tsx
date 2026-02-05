@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import SockJS from 'sockjs-client';
-import { Client, IMessage } from '@stomp/stompjs';
 import { useUserStore } from '@/store/useUserStore';
 import { GameMessage } from '@/types/chat';
 import { PlayerInfoResponse } from '@/types/rooms';
@@ -62,7 +60,8 @@ export default function GameRoomPage() {
             // 게임 시작 이벤트 처리
             if (data.type === 'START') {
                 toast.success("게임이 곧 시작됩니다!", { icon: '🎮' });
-                setTimeout(() => router.push(`/game/yacht/${data.message}`), 1000);
+                const gamePath = data.gameType.toLowerCase(); 
+                setTimeout(() => router.push(`/game/${gamePath}/${data.message}`), 1000);
             }
         });
 

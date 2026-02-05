@@ -6,14 +6,14 @@ import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useRummikubStore } from "@/store/useRummikubStore";
 import RummikubGame from "@/components/rummikub/RummikubGame";
 
-export default function RummikubPage({ params }: { params: { id: string } }) {
+export default function RummikubPage({ gameId }: { gameId: number }) {
     const { subscribe, isConnected } = useWebSocket();
     const { moveTileRemote, setCurrentTurn, myNickname, initializeGame } = useRummikubStore();
 
     useEffect(() => {
         if (!isConnected) return;
 
-        const unsubscribe = subscribe(`/topic/game/${params.id}`, (event: any) => {
+        const unsubscribe = subscribe(`/topic/game/${gameId}`, (event: any) => {
             // 1. 실시간 타일 이동 반영
             if (event.action === 'TILE_MOVE' && event.nickname !== myNickname) {
                 moveTileRemote(event.tileId, event.toX, event.toY);
@@ -28,11 +28,11 @@ export default function RummikubPage({ params }: { params: { id: string } }) {
         });
 
         return () => unsubscribe();
-    }, [isConnected, params.id, myNickname]);
+    }, [isConnected, gameId, myNickname]);
 
     return (
         <main className="min-h-screen bg-slate-950 text-white">
-            <RummikubGame roomId={params.id} />
+            <RummikubGame roomId={gameId} />
         </main>
     );
 }
