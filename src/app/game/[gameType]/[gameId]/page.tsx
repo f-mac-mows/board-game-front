@@ -7,7 +7,7 @@ import YachtContainer from "@/components/game/YachtContainer";
 export default function GamePage() {
     const params = useParams();
     const gameType = params.gameType as string;
-    const gameId = params.gameId as number;
+    const gameId = params.gameId as string;
 
     // gameType에 따라 렌더링할 컴포넌트 결정
     switch (gameType.toLowerCase()) {

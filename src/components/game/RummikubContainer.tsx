@@ -6,7 +6,7 @@ import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useRummikubStore } from "@/store/useRummikubStore";
 import RummikubGame from "@/components/rummikub/RummikubGame";
 
-export default function RummikubPage({ gameId }: { gameId: number }) {
+export default function RummikubPage({ gameId }: { gameId: string }) {
     const { subscribe, isConnected } = useWebSocket();
     const { moveTileRemote, setCurrentTurn, myNickname, initializeGame } = useRummikubStore();
 
