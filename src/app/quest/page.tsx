@@ -1,5 +1,6 @@
 "use client";
 
+import QuestTimer from '@/components/quest/QuestTimer';
 import { useQuests } from '@/hooks/useQuests';
 import { Loader2, Gift, CheckCircle, Home } from 'lucide-react';
 import {useRouter} from 'next/navigation';
@@ -30,6 +31,8 @@ export default function DailyQuestPage() {
                     <Home size={16} className="text-slate-500 group-hover:text-blue-400" />
                 </button>
             </header>
+            
+            <QuestTimer/>
 
             <div className="grid gap-4">
                 {quests.map((q: any) => {

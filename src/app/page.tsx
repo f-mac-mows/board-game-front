@@ -8,6 +8,7 @@ import { authApi } from '@/api/auth';
 import { useQuests } from '@/hooks/useQuests';
 import { User, Loader2, LogOut, ChevronRight, Gamepad2, CheckCircle, ScrollText, Menu, X, AlertTriangle } from 'lucide-react';
 import { UserBadge } from '@/components/user/UserBadge';
+import QuestTimer from '@/components/quest/QuestTimer';
 
 export default function HomePage() {
   const user = useUserStore((state) => state.user);
@@ -122,6 +123,7 @@ export default function HomePage() {
                     VIEW ALL <ChevronRight size={12} />
                   </button>
                 </div>
+                <QuestTimer />
                 <div className="space-y-2">
                   {topQuests.map((q: any) => (
                     <div key={q.id} className="p-4 bg-slate-900/50 border border-white/5 rounded-2xl space-y-2 text-xs">
