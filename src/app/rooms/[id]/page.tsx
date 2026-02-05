@@ -63,7 +63,7 @@ export default function GameRoomPage() {
     useEffect(() => {
         if (!roomId || isNaN(roomId) || !user) return;
 
-        const socket = new SockJS(`https://walrung.com/ws-game`);
+        const socket = new SockJS(`https://api.walrung.com/ws-game`);
         const client = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: 5000,

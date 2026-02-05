@@ -1,0 +1,213 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/game/yacht/[id]",
+      "regex": "^/game/yacht/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/game/yacht/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/ranking/[gameType]/[criteria]",
+      "regex": "^/ranking/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPgameType": "nxtPgameType",
+        "nxtPcriteria": "nxtPcriteria"
+      },
+      "namedRegex": "^/ranking/(?<nxtPgameType>[^/]+?)/(?<nxtPcriteria>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/rooms/[id]",
+      "regex": "^/rooms/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/rooms/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/user/status/[gameType]/[nickname]",
+      "regex": "^/user/status/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPgameType": "nxtPgameType",
+        "nxtPnickname": "nxtPnickname"
+      },
+      "namedRegex": "^/user/status/(?<nxtPgameType>[^/]+?)/(?<nxtPnickname>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/wiki/[gameType]",
+      "regex": "^/wiki/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPgameType": "nxtPgameType"
+      },
+      "namedRegex": "^/wiki/(?<nxtPgameType>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/auth/login",
+      "regex": "^/auth/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/login(?:/)?$"
+    },
+    {
+      "page": "/auth/signup",
+      "regex": "^/auth/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/signup(?:/)?$"
+    },
+    {
+      "page": "/cookie",
+      "regex": "^/cookie(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cookie(?:/)?$"
+    },
+    {
+      "page": "/icon.png",
+      "regex": "^/icon\\.png(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/icon\\.png(?:/)?$"
+    },
+    {
+      "page": "/login-success",
+      "regex": "^/login\\-success(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login\\-success(?:/)?$"
+    },
+    {
+      "page": "/privacy",
+      "regex": "^/privacy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/privacy(?:/)?$"
+    },
+    {
+      "page": "/quest",
+      "regex": "^/quest(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/quest(?:/)?$"
+    },
+    {
+      "page": "/robots.txt",
+      "regex": "^/robots\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/robots\\.txt(?:/)?$"
+    },
+    {
+      "page": "/rooms",
+      "regex": "^/rooms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/rooms(?:/)?$"
+    },
+    {
+      "page": "/set-nickname",
+      "regex": "^/set\\-nickname(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/set\\-nickname(?:/)?$"
+    },
+    {
+      "page": "/sitemap.xml",
+      "regex": "^/sitemap\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sitemap\\.xml(?:/)?$"
+    },
+    {
+      "page": "/terms",
+      "regex": "^/terms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/terms(?:/)?$"
+    },
+    {
+      "page": "/user",
+      "regex": "^/user(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user(?:/)?$"
+    },
+    {
+      "page": "/user/achievements",
+      "regex": "^/user/achievements(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/achievements(?:/)?$"
+    },
+    {
+      "page": "/user/settings",
+      "regex": "^/user/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/settings(?:/)?$"
+    },
+    {
+      "page": "/user/status",
+      "regex": "^/user/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/status(?:/)?$"
+    },
+    {
+      "page": "/user/titles",
+      "regex": "^/user/titles(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user/titles(?:/)?$"
+    },
+    {
+      "page": "/wiki",
+      "regex": "^/wiki(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/wiki(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
