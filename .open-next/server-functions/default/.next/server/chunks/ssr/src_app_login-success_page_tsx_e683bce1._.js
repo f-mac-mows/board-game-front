@@ -1,0 +1,3 @@
+module.exports=[25970,a=>{"use strict";var b=a.i(87924),c=a.i(72131),d=a.i(50944);function e(){let a=(0,d.useRouter)(),e=(0,d.useSearchParams)();return(0,c.useEffect)(()=>{let b=e.get("token");b?(localStorage.setItem("token",b),a.push("/")):a.push("auth/login")},[e,a]),(0,b.jsx)("div",{className:"min-h-screen bg-slate-950 flex items-center justify-center",children:(0,b.jsx)("div",{className:"text-white text-xl animate-pluse",children:"로그인 중입니다..."})})}a.s(["default",()=>e])}];
+
+//# sourceMappingURL=src_app_login-success_page_tsx_e683bce1._.js.map
