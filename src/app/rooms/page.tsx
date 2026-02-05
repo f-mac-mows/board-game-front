@@ -27,7 +27,7 @@ export default function RoomsPage() {
     // --- 웹소켓 연결 및 실시간 구독 ---
     useEffect(() => {
         // 게임 페이지와 동일한 엔드포인트 사용
-        const socket = new SockJS(`https://walrung.com/ws-game`);
+        const socket = new SockJS(`https://api.walrung.com/ws-game`);
         const client = Stomp.over(socket);
         client.debug = () => {}; // 콘솔 로그가 너무 많으면 비활성화
         stompClient.current = client;
