@@ -1,0 +1,27 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에 코드가 푸시될 때마다 배포 실행
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22 # 최신 안정화 버전 사용
+
+      - name: Install dependencies
+        run: npm ci # package-lock.json을 기준으로 깔끔하게 설치
+
+      - name: Build and Deploy
+        run: npm run deploy # 우리가 package.json에 적어둔 명령어를 실행
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
