@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import SockJS from 'sockjs-client';
 import { Client, IMessage } from '@stomp/stompjs';
@@ -8,118 +8,102 @@ import { useUserStore } from '@/store/useUserStore';
 import { GameMessage } from '@/types/chat';
 import { PlayerInfoResponse } from '@/types/rooms';
 import { roomApi } from '@/api/rooms';
+import { useWebSocket } from '@/contexts/WebSocketContext';
+import toast from 'react-hot-toast';
 
 export default function GameRoomPage() {
-    const params = useParams();
-    const roomIdStr = params?.id as string;
-    const roomId = Number(roomIdStr);
+    const { id } = useParams();
+    const roomId = Number(id);
     const router = useRouter();
     const { user, setCurrentRoomId } = useUserStore();
+    
+    // ✨ 공통 웹소켓 훅
+    const { subscribe, publish, isConnected } = useWebSocket();
 
     const [messages, setMessages] = useState<GameMessage[]>([]);
     const [input, setInput] = useState("");
     const [players, setPlayers] = useState<PlayerInfoResponse[]>([]);
     const [roomTitle, setRoomTitle] = useState("");
-    
-    const [isConnected, setIsConnected] = useState(false);
-    const stompClient = useRef<Client | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // 유저 상태 및 권한 체크
+    // 권한 및 상태 체크
     const myStatus = players.find(p => p.nickname === user?.nickname);
     const isPlayer = !!myStatus;
-    const isHost = myStatus?.host || myStatus?.host; // 서버 필드명에 맞춰 호환
-    
-    // 방장 포함 전원 준비 완료 시 시작 가능
-    const canStart = players.length >= 2 && players.every(p => p.ready || p.ready);
+    const isHost = myStatus?.host;
+    const canStart = players.length >= 2 && players.every(p => p.ready);
 
-    // 1. 방 정보 초기화 및 게임 진행 상태 체크
-    useEffect(() => {
-        if (!roomId || isNaN(roomId)) return;
-
-        const initRoom = async () => {
-            try {
-                const res = await roomApi.getRoomDetail(roomId);
-                
-                // [추가] 재접속 시 핵심 로직: 방 상태가 'IN_PROGRESS'라면 게임판으로 즉시 이동
-                if (res.data.status === "IN_PROGRESS" && res.data.currentGameId) {
-                    console.log("게임이 진행 중입니다. 게임 페이지로 이동합니다.");
-                    return router.replace(`/game/yacht/${res.data.currentGameId}`);
-                }
-
-                setPlayers(res.data.players);
-                setRoomTitle(res.data.title);
-
-            } catch (err) {
-                console.error("방 정보 로드 실패:", err);
-                router.replace("/rooms");
+    // 1. 방 정보 초기화 (기존 로직 유지)
+    const initRoom = useCallback(async () => {
+        try {
+            const res = await roomApi.getRoomDetail(roomId);
+            if (res.data.status === "IN_PROGRESS" && res.data.currentGameId) {
+                router.replace(`/game/yacht/${res.data.currentGameId}`);
+                return;
             }
-        };
-        
-        initRoom();
+            setPlayers(res.data.players);
+            setRoomTitle(res.data.title);
+        } catch (err) {
+            toast.error("방 정보를 불러올 수 없습니다.");
+            router.replace("/rooms");
+        }
     }, [roomId, router]);
 
-    // 2. 소켓 연결 및 실시간 동기화
+    // 2. 실시간 동기화 설정
     useEffect(() => {
-        if (!roomId || isNaN(roomId) || !user) return;
+        if (!isConnected || !user) return;
 
-        const socket = new SockJS(`https://api.walrung.com/ws-game`);
-        const client = new Client({
-            webSocketFactory: () => socket,
-            reconnectDelay: 5000,
-            onConnect: () => {
-                setIsConnected(true);
+        initRoom();
 
-                client.subscribe(`/topic/room/${roomId}`, (message: IMessage) => {
-                    const data = JSON.parse(message.body);
-                    if (data.players) setPlayers(data.players);
-                    if (data.type) setMessages((prev) => [...prev, data]);
-
-                    if (data.type === 'START') {
-                        const newGameId = data.message;
-                        setTimeout(() => router.push(`/game/yacht/${newGameId}`), 1000);
-                    }
-                });
-
-                // 플레이어인 경우에만 입장 통보
-                if (isPlayer) {
-                    client.publish({
-                        destination: '/app/chat/message',
-                        body: JSON.stringify({
-                            type: 'ENTER', roomId: roomId, sender: user.nickname,
-                            message: `${user.nickname}님이 입장하셨습니다.`
-                        })
-                    });
-                }
-            },
-            onDisconnect: () => setIsConnected(false),
+        // ✨ 방 토픽 구독
+        const unsubscribe = subscribe(`/topic/room/${roomId}`, (data) => {
+            if (data.players) setPlayers(data.players);
+            if (data.type) setMessages((prev) => [...prev, data]);
+            
+            // 게임 시작 이벤트 처리
+            if (data.type === 'START') {
+                toast.success("게임이 곧 시작됩니다!", { icon: '🎮' });
+                setTimeout(() => router.push(`/game/yacht/${data.message}`), 1000);
+            }
         });
 
-        client.activate();
-        stompClient.current = client;
+        // 입장 통보 (단발성 메시지 전송)
+        if (isPlayer) {
+            publish('/app/chat/message', {
+                type: 'ENTER', roomId, sender: user.nickname,
+                message: `${user.nickname}님이 입장하셨습니다.`
+            });
+        }
 
-        return () => {
-            if (stompClient.current) stompClient.current.deactivate();
-        };
-    }, [roomId, user, isPlayer]);
+        return () => unsubscribe();
+    }, [roomId, user, isConnected, isPlayer, subscribe, publish, initRoom]);
 
-    // 3. 채팅 자동 스크롤
+    // 3. 채팅 전송
+    const sendMessage = () => {
+        if (!input.trim() || !isConnected) return;
+        
+        publish('/app/chat/message', {
+            type: 'TALK', roomId, sender: user?.nickname, message: input
+        });
+        setInput("");
+    };
+
+    // 4. 자동 스크롤 (기존 동일)
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
 
-    // --- 핸들러 영역 ---
+    // --- 핸들러 영역 (기존 동일하되 toast 적용) ---
     const handleLeave = async () => {
         try {
             if (isPlayer) {
                 await roomApi.leave(roomId);
-                setCurrentRoomId(null); // AuthProvider 가드 해제
+                setCurrentRoomId(null);
             }
             router.push('/rooms');
-        } catch (err: any) {
-            alert("나가기 실패");
+        } catch (err) {
+            toast.error("퇴장에 실패했습니다.");
         }
     };
 
@@ -127,10 +111,11 @@ export default function GameRoomPage() {
         if (!isPlayer) return;
         try {
             await roomApi.toggleReady(roomId);
+            // 수동 갱신은 소켓에서 p.ready가 오기 전까지의 보조 수단
             const res = await roomApi.getRoomDetail(roomId);
-            setPlayers([...res.data.players]); 
-        } catch (err: any) {
-            alert("준비 처리 실패");
+            setPlayers(res.data.players); 
+        } catch (err) {
+            toast.error("준비 처리에 실패했습니다.");
         }
     };
 
@@ -139,19 +124,8 @@ export default function GameRoomPage() {
         try {
             await roomApi.startGame(roomId);
         } catch (err: any) {
-            alert(err.response?.data?.message || "시작 실패");
+            toast.error(err.response?.data?.message || "시작 실패");
         }
-    };
-
-    const sendMessage = () => {
-        if (!input.trim() || !stompClient.current) return;
-        stompClient.current.publish({
-            destination: '/app/chat/message',
-            body: JSON.stringify({
-                type: 'TALK', roomId: roomId, sender: user?.nickname, message: input
-            })
-        });
-        setInput("");
     };
 
     return (

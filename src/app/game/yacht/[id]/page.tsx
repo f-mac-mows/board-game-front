@@ -15,13 +15,14 @@ import {
 import { Stomp, CompatClient } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import Dice from "@/components/game/Dice";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 
 export default function YachtGamePage() {
     const { id } = useParams();
     const gameId = Number(id);
     const router = useRouter();
     const { user } = useUserStore();
-    const stompClient = useRef<CompatClient | null>(null);
+    const { subscribe, isConnected } = useWebSocket();
 
     const [originalRoomId, setOriginalRoomId] = useState<number | null>(null);
 
@@ -36,27 +37,36 @@ export default function YachtGamePage() {
     const [timer, setTimer] = useState(45);
     const [isRolling, setIsRolling] = useState(false);
 
+    // --- 초기 데이터 동기화 ---
+    const syncGameStatus = useCallback(async () => {
+        try {
+            const res = await yachtApi.syncGame(gameId);
+            const { status, scoreCards } = res.data;
+            if (scoreCards) setScoreCards(scoreCards);
+            if (status) {
+                if (status.timerSeconds) setTimer(Number(status.timerSeconds));
+                if (status.lastDice) setDice(status.lastDice.split(',').map(Number));
+                if (status.remaining) setRemainingRolls(Number(status.remaining));
+                if (status.turn) setCurrentTurn(status.turn);
+            }
+        } catch (err) {
+            console.error("동기화 실패:", err);
+        }
+    }, [gameId]);
+
     // --- 소켓 연결 ---
     useEffect(() => {
+        if (!isConnected) return;
+
         syncGameStatus();
 
-        const socket = new SockJS(`https://api.walrung.com/ws-game`);
-        const client = Stomp.over(socket);
-        stompClient.current = client;
-
-        client.connect({}, () => {
-            client.subscribe(`/topic/game/${gameId}`, (message) => {
-                const event: YachtGameEvent = JSON.parse(message.body);
-                handleGameEvent(event);
-            });
-            
-            syncGameStatus();
+        // ✨ subscribe 함수가 반환하는 unsubscribe를 그대로 return에 넣어 자동 해제
+        const unsubscribe = subscribe(`/topic/game/${gameId}`, (event: YachtGameEvent) => {
+            handleGameEvent(event);
         });
 
-        return () => {
-            if (stompClient.current) stompClient.current.deactivate();
-        };
-    }, [gameId]);
+        return () => unsubscribe();
+    }, [gameId, isConnected, subscribe, syncGameStatus]);
 
     // --- 이벤트 핸들러 ---
     const handleGameEvent = (event: YachtGameEvent) => {
@@ -124,28 +134,6 @@ export default function YachtGamePage() {
 
         return () => clearInterval(interval);
     }, [isGameOver]);
-
-    const syncGameStatus = async () => {
-        try {
-            const res = await yachtApi.syncGame(gameId);
-            const { status, scoreCards } = res.data;
-
-            // 1. 점수판 즉시 복구
-            if (scoreCards) {
-                setScoreCards(scoreCards);
-            }
-
-            // 2. 게임 상태 복구
-            if (status) {
-                if (status.timerSeconds) setTimer(Number(status.timerSeconds));
-                if (status.lastDice) setDice(status.lastDice.split(',').map(Number));
-                if (status.remaining) setRemainingRolls(Number(status.remaining));
-                if (status.turn) setCurrentTurn(status.turn);
-            }
-        } catch (err) {
-            console.error("동기화 실패:", err);
-        }
-    };
 
     const resetTurnState = (nextTurn?: string) => {
         setIsRolling(false);

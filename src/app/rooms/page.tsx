@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { roomApi } from "@/api/rooms";
 import { GameRoomResponse, GAME_TYPE_CONFIG, GameTypeCode } from "@/types/rooms";
 import { useUserStore } from "@/store/useUserStore";
-import { Stomp, CompatClient } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
+import { useWebSocket } from "@/contexts/WebSocketContext";
+import toast from "react-hot-toast";
 
 export default function RoomsPage() {
     const router = useRouter();
     const { user } = useUserStore();
-    const stompClient = useRef<CompatClient | null>(null);
     
+    const { subscribe, isConnected } = useWebSocket();
+
     // 상태 관리
     const [rooms, setRooms] = useState<GameRoomResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -24,46 +25,41 @@ export default function RoomsPage() {
         gameType: "YACHT" as GameTypeCode
     });
 
-    // --- 웹소켓 연결 및 실시간 구독 ---
-    useEffect(() => {
-        // 게임 페이지와 동일한 엔드포인트 사용
-        const socket = new SockJS(`https://api.walrung.com/ws-game`);
-        const client = Stomp.over(socket);
-        client.debug = () => {}; // 콘솔 로그가 너무 많으면 비활성화
-        stompClient.current = client;
-
-        client.connect({}, () => {
-            // 실시간 방 목록 구독 (백엔드 broadcastRoomList()와 매칭)
-            client.subscribe("/topic/rooms", (message) => {
-                const updatedRooms = JSON.parse(message.body);
-                setRooms(updatedRooms);
-            });
-            // 초기 데이터 로드
-            fetchRooms();
-        });
-
-        return () => {
-            if (stompClient.current) stompClient.current.deactivate();
-        };
-    }, []);
-
-    const fetchRooms = async () => {
+    // --- 방 목록 조회 ---
+    const fetchRooms = useCallback(async () => {
         setIsLoading(true);
         try {
             const res = await roomApi.getRooms();
             setRooms(res.data);
         } catch (err) {
             console.error("방 목록 로드 실패:", err);
+            toast.error("방 목록을 불러오지 못했습니다.");
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
+    // --- 실시간 구독 설정 ---
+    useEffect(() => {
+        if (!isConnected) return;
+
+        // 1. 초기 로드
+        fetchRooms();
+
+        // 2. 실시간 방 목록 구독
+        const unsubscribe = subscribe("/topic/rooms", (updatedRooms: GameRoomResponse[]) => {
+            setRooms(updatedRooms);
+        });
+
+        return () => unsubscribe();
+    }, [isConnected, subscribe, fetchRooms]);
+
+    // --- 핸들러 함수들 ---
     const handleCreateRoom = async (e: React.FormEvent) => {
         e.preventDefault();
         const trimmedTitle = createData.title.trim();
         if (trimmedTitle.length < 2 || trimmedTitle.length > 8) {
-            alert("제목은 2~8자 사이여야 합니다.");
+            toast.error("제목은 2~8자 사이여야 합니다.");
             return;
         }
 
@@ -73,19 +69,19 @@ export default function RoomsPage() {
                 gameType: createData.gameType
             });
             
-            if (res.data && res.data.id) {
+            if (res.data?.id) {
                 setIsModalOpen(false);
                 router.push(`/rooms/${res.data.id}`);
             }
         } catch (err: any) {
-            alert(err.response?.data?.message || "방 생성에 실패했습니다.");
+            toast.error(err.response?.data?.message || "방 생성에 실패했습니다.");
         }
     };
 
     const handleJoinRoom = async (roomId: number) => {
         try {
             const targetRoom = rooms.find(r => r.id === roomId);
-            if (targetRoom && targetRoom.hostNickname === user?.nickname) {
+            if (targetRoom?.hostNickname === user?.nickname) {
                 router.push(`/rooms/${roomId}`);
                 return;
             }
@@ -97,14 +93,12 @@ export default function RoomsPage() {
             if (msg.includes("이미 참여")) {
                 router.push(`/rooms/${roomId}`);
             } else {
-                alert(msg || "입장에 실패했습니다.");
+                toast.error(msg || "입장에 실패했습니다.");
             }
         }
     };
 
-    const returnToHome = () => {
-        router.push('/');
-    }
+    const returnToHome = () => router.push('/');
 
     return (
         <div className="min-h-screen bg-slate-950 text-white p-6 sm:p-12">
