@@ -1,5 +1,6 @@
 "use client";
 
+import ClaimButton from '@/components/quest/ClaimButton';
 import QuestTimer from '@/components/quest/QuestTimer';
 import { useQuests } from '@/hooks/useQuests';
 import { Loader2, Gift, CheckCircle, Home } from 'lucide-react';
@@ -64,23 +65,13 @@ export default function DailyQuestPage() {
                                     {q.currentValue} / {q.targetValue}
                                 </span>
 
-                                {q.isClaimed ? (
-                                    <div className="flex items-center gap-1 text-slate-600 font-bold text-sm">
-                                        <CheckCircle size={16} /> 획득 완료
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => claimReward(q.id)}
-                                        disabled={!q.completed || isClaiming}
-                                        className={`px-6 py-2 rounded-2xl font-black text-sm transition-all ${
-                                            canClaim 
-                                            ? 'bg-emerald-500 text-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.4)] animate-bounce-subtle' 
-                                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                                        }`}
-                                    >
-                                        {isClaiming ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : '보상 받기'}
-                                    </button>
-                                )}
+                                <ClaimButton 
+                                    isCompleted={q.completed} // q.completed 혹은 q.isCompleted
+                                    isClaimed={q.claimed} 
+                                    onClaim={async () => {
+                                        claimReward(q.id);
+                                    }}
+                                />
                             </div>
                         </div>
                     );

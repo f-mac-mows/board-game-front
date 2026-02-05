@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.16.2",
@@ -17,6 +18,7 @@
     "@tanstack/react-query": "^5.90.20",
     "@types/three": "^0.182.0",
     "axios": "^1.13.2",
+    "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
     "next": "^16.1.5",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

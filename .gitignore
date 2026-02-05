@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+### Remix+CloudflarePages ###
+/functions/\[\[path\]\].js
+/functions/\[\[path\]\].js.map
+
+### Remix+CloudflareWorkers ###
+/dist
+/.mf
