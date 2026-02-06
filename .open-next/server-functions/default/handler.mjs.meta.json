@@ -3601,18 +3601,13 @@
       "imports": [],
       "format": "cjs"
     },
+    ".open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js": {
+      "bytes": 11025,
+      "imports": [],
+      "format": "cjs"
+    },
     ".open-next/server-functions/default/.next/server/app/sitemap.xml/route_client-reference-manifest.js": {
       "bytes": 314,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js": {
-      "bytes": 11060,
-      "imports": [],
-      "format": "cjs"
-    },
-    ".open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js": {
-      "bytes": 313,
       "imports": [],
       "format": "cjs"
     },
@@ -3621,13 +3616,18 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/quest/page_client-reference-manifest.js": {
-      "bytes": 11164,
+    ".open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js": {
+      "bytes": 313,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js": {
-      "bytes": 11025,
+    ".open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js": {
+      "bytes": 11060,
+      "imports": [],
+      "format": "cjs"
+    },
+    ".open-next/server-functions/default/.next/server/app/quest/page_client-reference-manifest.js": {
+      "bytes": 11164,
       "imports": [],
       "format": "cjs"
     },
@@ -3671,13 +3671,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js": {
-      "bytes": 12731,
+    ".open-next/server-functions/default/.next/server/app/user/achievements/page_client-reference-manifest.js": {
+      "bytes": 12806,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/user/achievements/page_client-reference-manifest.js": {
-      "bytes": 12806,
+    ".open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js": {
+      "bytes": 12731,
       "imports": [],
       "format": "cjs"
     },
@@ -3686,13 +3686,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js": {
-      "bytes": 11107,
+    ".open-next/server-functions/default/.next/server/app/auth/signup/page_client-reference-manifest.js": {
+      "bytes": 11108,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/auth/signup/page_client-reference-manifest.js": {
-      "bytes": 11108,
+    ".open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js": {
+      "bytes": 11107,
       "imports": [],
       "format": "cjs"
     },
@@ -3750,19 +3750,14 @@
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/user/page_client-reference-manifest.js"
         },
         {
+          "path": ".open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js"
+        },
+        {
           "path": ".open-next/server-functions/default/.next/server/app/sitemap.xml/route_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/sitemap.xml/route_client-reference-manifest.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/rooms/page_client-reference-manifest.js",
@@ -3770,14 +3765,19 @@
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/rooms/page_client-reference-manifest.js"
         },
         {
+          "path": ".open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js"
+        },
+        {
           "path": ".open-next/server-functions/default/.next/server/app/quest/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/quest/page_client-reference-manifest.js"
-        },
-        {
-          "path": ".open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/privacy/page_client-reference-manifest.js",
@@ -3820,14 +3820,14 @@
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/user/status/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/.next/server/app/user/achievements/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/user/achievements/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/rooms/[id]/page_client-reference-manifest.js",
@@ -3835,14 +3835,14 @@
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/rooms/[id]/page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/.next/server/app/auth/signup/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/auth/signup/page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "/Users/mows/Workspace/ubuntu/board-game-front/.open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/ranking/[gameType]/[criteria]/page_client-reference-manifest.js",
@@ -4323,7 +4323,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__a80e5f53._.js": {
-      "bytes": 126749,
+      "bytes": 126606,
       "imports": [
         {
           "path": "buffer",
@@ -5278,7 +5278,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/chunks/ssr/src_84ae7977._.js": {
-      "bytes": 6165,
+      "bytes": 6229,
       "imports": [],
       "format": "cjs"
     },
@@ -10245,23 +10245,23 @@
         ".open-next/server-functions/default/.next/server/app/user/page_client-reference-manifest.js": {
           "bytesInOutput": 12346
         },
+        ".open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js": {
+          "bytesInOutput": 10529
+        },
         ".open-next/server-functions/default/.next/server/app/sitemap.xml/route_client-reference-manifest.js": {
           "bytesInOutput": 463
-        },
-        ".open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js": {
-          "bytesInOutput": 10571
-        },
-        ".open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js": {
-          "bytesInOutput": 462
         },
         ".open-next/server-functions/default/.next/server/app/rooms/page_client-reference-manifest.js": {
           "bytesInOutput": 10529
         },
+        ".open-next/server-functions/default/.next/server/app/robots.txt/route_client-reference-manifest.js": {
+          "bytesInOutput": 462
+        },
+        ".open-next/server-functions/default/.next/server/app/set-nickname/page_client-reference-manifest.js": {
+          "bytesInOutput": 10571
+        },
         ".open-next/server-functions/default/.next/server/app/quest/page_client-reference-manifest.js": {
           "bytesInOutput": 10668
-        },
-        ".open-next/server-functions/default/.next/server/app/terms/page_client-reference-manifest.js": {
-          "bytesInOutput": 10529
         },
         ".open-next/server-functions/default/.next/server/app/privacy/page_client-reference-manifest.js": {
           "bytesInOutput": 10537
@@ -10287,20 +10287,20 @@
         ".open-next/server-functions/default/.next/server/app/user/status/page_client-reference-manifest.js": {
           "bytesInOutput": 12143
         },
-        ".open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js": {
-          "bytesInOutput": 12189
-        },
         ".open-next/server-functions/default/.next/server/app/user/achievements/page_client-reference-manifest.js": {
           "bytesInOutput": 12268
+        },
+        ".open-next/server-functions/default/.next/server/app/user/settings/page_client-reference-manifest.js": {
+          "bytesInOutput": 12189
         },
         ".open-next/server-functions/default/.next/server/app/rooms/[id]/page_client-reference-manifest.js": {
           "bytesInOutput": 10563
         },
-        ".open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js": {
-          "bytesInOutput": 10617
-        },
         ".open-next/server-functions/default/.next/server/app/auth/signup/page_client-reference-manifest.js": {
           "bytesInOutput": 10619
+        },
+        ".open-next/server-functions/default/.next/server/app/auth/login/page_client-reference-manifest.js": {
+          "bytesInOutput": 10617
         },
         ".open-next/server-functions/default/.next/server/app/ranking/[gameType]/[criteria]/page_client-reference-manifest.js": {
           "bytesInOutput": 13633
@@ -10378,7 +10378,7 @@
           "bytesInOutput": 4668
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__a80e5f53._.js": {
-          "bytesInOutput": 131261
+          "bytesInOutput": 131037
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__e2f86be8._.js": {
           "bytesInOutput": 1035
@@ -10618,7 +10618,7 @@
           "bytesInOutput": 271
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/src_84ae7977._.js": {
-          "bytesInOutput": 6613
+          "bytesInOutput": 6684
         },
         ".open-next/server-functions/default/.next/server/chunks/ssr/[root-of-the-server]__786a9999._.js": {
           "bytesInOutput": 1459
@@ -11014,7 +11014,7 @@
           "bytesInOutput": 67300
         }
       },
-      "bytes": 6099323
+      "bytes": 6099170
     }
   }
 }
