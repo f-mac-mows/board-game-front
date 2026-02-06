@@ -14,6 +14,7 @@ export default function GameRoomPage() {
     const roomId = Number(id);
     const router = useRouter();
     const { user, setCurrentRoomId } = useUserStore();
+    const [isLeaving, setIsLeaving] = useState(false);
     
     // ✨ 공통 웹소켓 훅
     const { subscribe, publish, isConnected } = useWebSocket();
@@ -32,12 +33,14 @@ export default function GameRoomPage() {
 
     // 1. 방 정보 초기화
     const initRoom = useCallback(async () => {
+        if (isLeaving) return;
+
         try {
             const res = await roomApi.getRoomDetail(roomId);
             const { status, currentGameId, gameType } = res.data;
 
             // ✨ 개선: 게임이 진행 중일 때 해당 게임 타입에 맞는 경로로 이동
-            if (status === "IN_PROGRESS" && currentGameId) {
+            if (!isLeaving && status === "IN_PROGRESS" && currentGameId) {
                 const gamePath = gameType.toLowerCase(); 
                 router.replace(`/game/${gamePath}/${currentGameId}`);
                 return;
@@ -46,9 +49,10 @@ export default function GameRoomPage() {
             setPlayers(res.data.players);
             setRoomTitle(res.data.title);
         } catch (err) {
-            console.error(err);
-            toast.error("방 정보를 불러올 수 없습니다.");
-            router.replace("/rooms");
+            if (!isLeaving) {
+                toast.error("방 정보를 불러올 수 없습니다.");
+                router.replace("/rooms");
+            }
         }
     }, [roomId, router]);
 
@@ -102,12 +106,14 @@ export default function GameRoomPage() {
     // --- 핸들러 영역 (기존 동일하되 toast 적용) ---
     const handleLeave = async () => {
         try {
+            setIsLeaving(true);
             if (isPlayer) {
                 await roomApi.leave(roomId);
                 setCurrentRoomId(null);
             }
             router.push('/rooms');
         } catch (err) {
+            setIsLeaving(false);
             toast.error("퇴장에 실패했습니다.");
         }
     };
