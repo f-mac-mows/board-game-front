@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build:next": "next build", 
-    "build": "opennextjs-cloudflare build",
+    "build": "next build", 
     "start": "next start",
-    "deploy": "npm run build && opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
