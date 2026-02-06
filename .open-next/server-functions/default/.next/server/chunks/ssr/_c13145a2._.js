@@ -1,3 +1,0 @@
-module.exports=[35112,(a,b,c)=>{"use strict";b.exports=a.r(42602).vendored["react-ssr"].ReactDOM},99418,a=>{"use strict";a.s(["CategoryLabel",0,{ONES:"Ones",TWOS:"Twos",THREES:"Threes",FOURS:"Fours",FIVES:"Fives",SIXES:"Sixes",CHOICE:"Choice",FOUR_OF_A_KIND:"4 of a Kind",FULL_HOUSE:"Full House",SMALL_STRAIGHT:"Small Straight",LARGE_STRAIGHT:"Large Straight",YACHT:"Yacht"}])}];
-
-//# sourceMappingURL=_c13145a2._.js.map

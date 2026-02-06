@@ -8,10 +8,14 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "workers_dev": true,
-  "vars": {
-    "NEXT_PUBLIC_API_URL": "https://api.walrung.com/api"
-  },
   "keep_vars": true,
-  "send_metrics": false
+  "send_metrics": false,
+  "preview_urls": true,
+  "workers_dev": false, // 커스텀 도메인 사용 시 false로 두어도 무방합니다.
+  "routes": [
+    {
+      "custom_domain": true,
+      "pattern": "walrung.com" 
+    }
+  ]
 }
