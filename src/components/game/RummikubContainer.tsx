@@ -13,7 +13,7 @@ export default function RummikubPage({ gameId }: { gameId: string }) {
     useEffect(() => {
         if (!isConnected) return;
 
-        const unsubscribe = subscribe(`/topic/game/${gameId}`, (event: any) => {
+        const unsubscribe = subscribe(`/topic/game/RUMMIKUB/${gameId}`, (event: any) => {
             // 1. 실시간 타일 이동 반영
             if (event.action === 'TILE_MOVE' && event.nickname !== myNickname) {
                 moveTileRemote(event.tileId, event.toX, event.toY);

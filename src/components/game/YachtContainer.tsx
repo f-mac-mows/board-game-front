@@ -59,7 +59,7 @@ export default function YachtGamePage({ gameId }: { gameId: string}) {
         syncGameStatus();
 
         // ✨ subscribe 함수가 반환하는 unsubscribe를 그대로 return에 넣어 자동 해제
-        const unsubscribe = subscribe(`/topic/game/${gameId}`, (event: YachtGameEvent) => {
+        const unsubscribe = subscribe(`/topic/game/YACHT/${gameId}`, (event: YachtGameEvent) => {
             handleGameEvent(event);
         });
 
