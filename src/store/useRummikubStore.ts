@@ -48,17 +48,19 @@ export const useRummikubStore = create<RummikubState>((set) => ({
     }),
 
     moveTile: (tileId, to, x, y) => set((state) => {
-        // 1. 전체 타일에서 움직일 타일 찾기
         const allTiles = [...state.boardTiles, ...state.handTiles];
+        // 문자열과 숫자 모두 대응하도록 toString() 사용
         const movingTile = allTiles.find(t => t.id.toString() === tileId.toString());
         
-        if (!movingTile) return state;
+        if (!movingTile) {
+            console.error("타일을 찾을 수 없음:", tileId);
+            return state;
+        }
 
-        // 2. 기존 위치에서 제거
+        // 기존 위치에서 제거
         const filteredBoard = state.boardTiles.filter(t => t.id.toString() !== tileId.toString());
         const filteredHand = state.handTiles.filter(t => t.id.toString() !== tileId.toString());
 
-        // 3. 목적지에 타일 추가 (좌표 업데이트)
         const updatedTile = { ...movingTile, x, y };
 
         return to === 'board' 

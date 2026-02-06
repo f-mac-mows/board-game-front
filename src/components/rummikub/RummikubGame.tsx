@@ -11,9 +11,11 @@ import { toast } from "react-hot-toast";
 
 import RummikubCell from "./RummikubCell";
 import RummikubTile from "./RummikubTile";
+import { useUserStore } from "@/store/useUserStore";
 
 export default function RummikubGame({ roomId }: { roomId: string }) {
   const router = useRouter();
+  const { user } = useUserStore();
   const numericRoomId = Number(roomId);
   const { subscribe, isConnected } = useWebSocket();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -43,7 +45,9 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
       const data = res.data;
 
       // 상단 정보 업데이트
-      setMyNickname(data.myNickname);
+      if (user?.nickname) {
+        setMyNickname(user.nickname);
+      }
       setCurrentTurn(data.currentTurn);
       setTilePoolCount(data.tilePoolCount);
       setTimer(data.remainingSeconds);
