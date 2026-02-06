@@ -4,17 +4,16 @@ export function getWikiContent(gameType: string): string | null {
   const encoded = WIKI_REGISTRY_ENCODED[gameType.toLowerCase()];
   if (!encoded) return null;
 
+  // Base64 디코딩 (Edge Runtime 호환 방식)
   try {
-    // 1. Base64 문자열을 바이너리로 변환
-    const binaryString = atob(encoded);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    const binary = atob(encoded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
     }
-    // 2. UTF-8로 디코딩 (한글 보존)
     return new TextDecoder().decode(bytes);
   } catch (e) {
-    console.error("Wiki decoding failed:", e);
+    console.error("Decoding error:", e);
     return null;
   }
 }
