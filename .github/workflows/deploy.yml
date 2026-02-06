@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main # main 브랜치에 코드가 푸시될 때마다 배포 실행
+      - dev
 
 jobs:
   deploy:
@@ -16,12 +17,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22 # 최신 안정화 버전 사용
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci # package-lock.json을 기준으로 깔끔하게 설치
 
       - name: Build and Deploy
-        run: npm run deploy # 우리가 package.json에 적어둔 명령어를 실행
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # wrangler-action을 사용하면 환경 변수 주입이 더 깔끔합니다.
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # 브랜치가 main이면 일반 배포, 아니면(dev 등) dev 환경으로 배포
+          command: |
+            ${{ github.ref_name == 'main' && 'run deploy' || 'run deploy -- --env dev' }}
