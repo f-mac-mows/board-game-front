@@ -35,16 +35,29 @@ export const useRummikubStore = create<RummikubState>((set) => ({
     setBoardValid: (isValid) => set({ isBoardValid: isValid }),
 
     initializeGame: (data) => set(() => {
-        // 보드 타일 배치: 서버 세트별로 행(Row)을 나누어 배치
-        const mappedBoard = (data.table || []).flatMap((chunk, rowIndex) => 
-            chunk.map((tile, colIndex) => ({ ...tile, x: rowIndex, y: colIndex }))
-        );
-        // 손패 배치: 20열씩 끊어서 배치
-        const mappedHand = (data.myHand || []).map((tile, i) => ({
-            ...tile, x: Math.floor(i / 20), y: i % 20
+        // 1. 보드 타일 매핑 (2차원 -> 좌표값 포함 1차원)
+        const tableData = data.table || [];
+        const mappedBoard = tableData.flatMap((chunk, rowIndex) => {
+            if (!Array.isArray(chunk)) return []; // chunk가 배열이 아니면 무시
+            return chunk.map((tile, colIndex) => ({
+                ...tile,
+                x: rowIndex,
+                y: colIndex
+            }));
+        });
+
+        // 2. 손패 타일 매핑 (1차원 -> 좌표값 포함 1차원)
+        const handData = data.myHand || [];
+        const mappedHand = handData.map((tile, i) => ({
+            ...tile,
+            x: Math.floor(i / 20),
+            y: i % 20
         }));
 
-        return { boardTiles: mappedBoard, handTiles: mappedHand };
+        return { 
+            boardTiles: mappedBoard, 
+            handTiles: mappedHand 
+        };
     }),
 
     moveTile: (tileId, to, x, y) => set((state) => {
