@@ -158,10 +158,14 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
         newTable: cleanTable,
         newHand: cleanHand
       });
-      console.log("Current Turn:", currentTurnNickname, "My Name:", myNickname)
+
       toast.success("턴을 마쳤습니다.");
-    } catch (err) {
-      toast.error("제출에 실패했습니다.");
+      // 소켓 이벤트를 기다리기 전, 즉시 최신 상태를 한 번 더 가져옵니다.
+      await syncGameStatus(); 
+    } catch (err: any) {
+      // 서버에서 보낸 에러 메시지가 있다면 표시
+      const errorMsg = err.response?.data?.message || "제출에 실패했습니다.";
+      toast.error(errorMsg);
     }
   };
 
