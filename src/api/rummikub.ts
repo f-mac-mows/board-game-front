@@ -13,4 +13,8 @@ export const rummikubApi = {
     // 게임 상태 동기화 (필요 시)
     sync: (roomId: number) =>
         api.get(`/rummikub/${roomId}/sync`),
+
+    // 🚩 실시간 타일 이동 기록 추가
+    move: (roomId: number, data: { tileId: number; toX: number; toY: number }) =>
+        api.post(`/rummikub/${roomId}/move`, data),
 };

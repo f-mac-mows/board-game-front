@@ -23,8 +23,14 @@ export function useRummikubActions(roomId: number) {
                 case 'RUMMIKUB_3001': // INSUFFICIENT_SCORE
                     toast.error(msg, { icon: '🔢' });
                     break;
+                case 'RUMMIKUB_3002': // NO_MORE_TILES
+                    toast.error('더 이상 타일이 없습니다.', { icon: '⚠️' });
+                    break;
                 case 'RUMMIKUB_3003': // INVALID_COMBINATION
                     toast.error('유효하지 않은 조합이 포함되어 있습니다.', { icon: '⚠️' });
+                    break;
+                case 'RUMMIKUB_3004': // BAD_REQUEST
+                    toast.error('타일 데이터 부정 조작이 감지되었습니다.', { icon: '⚠️' });
                     break;
                 default:
                     toast.error(msg);

@@ -95,4 +95,12 @@ export interface ErrorResponse {
 }
 
 // 자주 발생하는 에러 코드 모음
-export type GameErrorCode = 'NOT_YOUR_TURN' | 'NO_MORE_ROLLS' | 'ALREADY_FILLED' | 'INVALID_CATEGORY' | 'INTERNAL_SERVER_ERROR';
+export type GameErrorCode = 'NOT_YOUR_TURN' 
+    | 'NO_MORE_ROLLS' 
+    | 'ALREADY_FILLED' 
+    | 'INVALID_CATEGORY' 
+    | 'INTERNAL_SERVER_ERROR'
+    | 'INSUFFICIENT_SCORE'
+    | 'NO_MORE_TILES'
+    | 'INVALID_COMBINATION'
+    | 'BAD_REQUEST';

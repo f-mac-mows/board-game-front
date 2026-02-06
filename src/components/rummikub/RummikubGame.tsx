@@ -8,6 +8,8 @@ import { toast } from "react-hot-toast";
 import RummikubCell from "./RummikubCell";
 import RummikubTile from "./RummikubTile";
 import { useRouter } from "next/navigation";
+import { rummikubApi } from "@/api/rummikub";
+import { useRummikubActions } from "@/hooks/useRummikub";
 
 export default function RummikubGame({ roomId }: { roomId: string }) {
   const { 
@@ -23,16 +25,19 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const router = useRouter();
 
+  const { submitTurn } = useRummikubActions(Number(roomId));
+  
   // 초기 동기화
   useEffect(() => {
-    fetch(`/api/game/rummikub/${roomId}/sync`)
-      .then(res => res.json())
-      .then(data => {
-        setMyNickname(data.myNickname);
-        setCurrentTurn(data.currentTurn);
-        initializeGame({ table: data.table, myHand: data.myHand });
-      });
-  }, [roomId]);
+  rummikubApi.sync(Number(roomId))
+    .then(res => {
+      const data = res.data; // Axios는 res.data에 데이터가 들어있습니다.
+      setMyNickname(data.myNickname);
+      setCurrentTurn(data.currentTurn);
+      initializeGame({ table: data.table, myHand: data.myHand });
+    })
+    .catch(err => toast.error("게임 데이터를 가져오지 못했습니다."));
+}, [roomId]);
 
   // 실시간 유효성 검사
   useEffect(() => {
@@ -44,32 +49,33 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   const handleDragEnd = async (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over) return;
+
     const [area, x, y] = (over.id as string).split("-");
     const toX = Number(x), toY = Number(y);
+    const tileId = Number(active.id);
 
+    // 1. UI 즉시 반영 (Optimistic Update)
     moveTile(active.id.toString(), area as any, toX, toY);
 
+    // 2. 서버 동기화 (Axios 사용)
     if (area === "board") {
-      await fetch(`/api/game/rummikub/${roomId}/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tileId: Number(active.id), toX, toY })
-      });
+      try {
+          await rummikubApi.move(Number(roomId), { tileId, toX, toY });
+      } catch (error) {
+          console.error("Move sync failed:", error);
+          // 필요 시 moveTile을 이전 상태로 되돌리는 로직 추가
+      }
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!isBoardValid) return toast.error("조합이 올바르지 않습니다.");
-    const res = await fetch(`/api/game/rummikub/${roomId}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        nickname: myNickname, 
-        newTable: RummikubValidator.getRowsWithChunks(boardTiles),
-        newHand: handTiles 
-      })
+    
+    submitTurn({
+      nickname: myNickname,
+      newTable: RummikubValidator.getRowsWithChunks(boardTiles),
+      newHand: handTiles
     });
-    if (res.ok) toast.success("턴 완료!");
   };
 
   const renderGrid = (area: "board" | "hand", rows: number, cols: number) => {
