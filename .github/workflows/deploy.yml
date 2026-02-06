@@ -29,4 +29,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           # 브랜치가 main이면 일반 배포, 아니면(dev 등) dev 환경으로 배포
-          command: ${{ github.ref_name == 'main' && 'run build && npx wrangler deploy' || 'run build && npx wrangler deploy --env dev' }}
+          command: deploy
+          args: ${{ github.ref_name == 'main' && '' || '--env dev' }}
