@@ -69,6 +69,7 @@ export default function GameRoomPage() {
             
             // 게임 시작 이벤트 처리
             if (data.type === 'START') {
+                console.log("🎮 수신된 시작 데이터:", data);
                 toast.success("게임이 곧 시작됩니다!", { icon: '🎮' });
                 const gamePath = data.gameType.toLowerCase(); 
                 setTimeout(() => router.push(`/game/${gamePath}/${data.message}`), 1000);
