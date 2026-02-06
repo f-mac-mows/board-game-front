@@ -2,8 +2,18 @@ import { notFound } from "next/navigation";
 import { GAME_TYPE_CONFIG, GameTypeCode } from "@/types/rooms";
 import MdReader from "@/components/common/MdReader";
 import MetaTag from "@/components/common/MetaTag";
-import { getWikiContent } from "@/lib/wiki";
+import { getWikiContent, getAllWikiSlugs } from "@/lib/wiki";
 import { Metadata } from "next";
+
+// [핵심] 빌드 시점에 생성할 경로들을 정의합니다.
+export async function generateStaticParams() {
+  const slugs = getAllWikiSlugs();
+  
+  // 결과: [{ gameType: 'yacht' }, { gameType: 'gomoku' }, ...]
+  return slugs.map((slug) => ({
+    gameType: slug,
+  }));
+}
 
 // 1. Metadata 생성 - SEO 최적화
 export async function generateMetadata({ 
