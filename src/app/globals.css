@@ -138,3 +138,21 @@ body {
 img {
   image-rendering: pixelated; /* 도트가 뭉개지지 않게 */
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+    border: 2px solid rgba(30, 41, 59, 0.5);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.5);
+  }
+}
