@@ -5,6 +5,7 @@ import MetaTag from "@/components/common/MetaTag";
 import { getWikiContent, getAllWikiSlugs } from "@/lib/wiki";
 import { Metadata } from "next";
 
+export const dynamicParams = false;
 export const dynamic = 'force-static';
 export const revalidate = false; // 정적 파일이므로 캐시 갱신 불필요
 

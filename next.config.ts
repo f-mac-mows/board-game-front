@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  trailingSlash: true,
+
+  output: 'standalone',
   // 1. 개발 서버 보안 설정 (v16에서 강화된 부분)
   devIndicators: {
     // 특정 호스트나 IP에서 HMR(Hot Module Replacement) 연결을 허용
