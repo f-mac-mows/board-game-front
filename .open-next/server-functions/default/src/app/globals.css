@@ -1,0 +1,158 @@
+/* globals.css */
+@import "tailwindcss";
+
+@theme {
+  /* v4에서 기본 색상을 명시적으로 확장 */
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-cyan-400: #22d3ee;
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* 새롭게 추가된 게임 테마 색상 정의 */
+  --color-blue-500: #3b82f6; 
+  --color-blue-400: #60a5fa;
+  --color-blue-300: #93c5fd;
+  --color-blue-600: #2563eb;
+  
+  --color-green-500: #22c55e;
+  --color-green-400: #4ade80;
+  --color-green-300: #86efac;
+  --color-green-600: #16a34a;
+
+  --color-red-500: #ef4444;
+  --color-red-400: #f87171;
+  --color-red-300: #fda4af;
+  --color-red-600: #dc2626;
+
+  --color-purple-500: #a855f7;
+  --color-purple-400: #c084fc;
+  --color-purple-300: #d8b4fe;
+  --color-purple-600: #9333ea;
+
+  /* --- RGB 값도 함께 정의 (그림자 효과용) --- */
+  --color-blue-500-rgb: 59, 130, 246;
+  --color-green-500-rgb: 34, 197, 94;
+  --color-red-500-rgb: 239, 68, 68;
+  --color-purple-500-rgb: 168, 85, 247;
+}
+
+:root {
+  --background: #020617;
+  --foreground: #ededed;
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* MdReader에 사용되는 스타일 최적화 */
+.md-content h1 { @apply text-4xl font-black mb-6 text-blue-500; }
+.md-content h2 { @apply text-2xl font-bold mb-4 border-b border-slate-800 pb-2; }
+.md-content h3 { @apply text-xl font-bold mt-6 mb-2 text-emerald-500; }
+.md-content p { @apply text-slate-400 leading-relaxed mb-4; }
+
+/* 리스트 스타일 추가 */
+.md-content ul { @apply list-disc pl-6 mb-4 text-slate-400; }
+
+/* 1. 2. 3. 숫자 리스트 스타일 */
+.md-content ol { 
+  @apply list-decimal pl-6 mb-4 text-slate-400; 
+}
+
+/* 숫자(마커) 색상을 밝게 설정 */
+.md-content ol li::marker {
+  @apply text-blue-500 font-bold; /* 숫자를 파란색으로 강조하면 더 예쁩니다 */
+}
+
+/* 리스트 항목 간의 간격 조절 */
+.md-content li {
+  @apply mb-2;
+}
+
+.md-content blockquote { @apply border-l-4 border-blue-500 bg-blue-500/10 p-4 rounded-r-xl italic my-6; }
+
+/* 마크다운 내부의 강조 텍스트 색상 */
+.md-content strong { @apply text-slate-200 font-bold; }
+
+/* Table 스타일 */
+.md-content table { @apply w-full border-collapse my-8 text-sm text-left; }
+.md-content thead { @apply border-b border-slate-700 bg-slate-900/50; }
+.md-content th { @apply px-4 py-3 font-bold text-blue-400; }
+.md-content td { @apply px-4 py-3 border-b border-slate-800/50 text-slate-400; }
+.md-content tr:hover { @apply bg-slate-800/30 transition-colors; }
+
+/* Inline Code (백틱 한 개) */
+.md-content :not(pre) > code {
+  @apply bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-[0.9em];
+}
+
+/* Code Block (백틱 세 개) */
+.md-content pre {
+  @apply bg-black/50 border border-slate-800 p-4 rounded-2xl my-6 overflow-x-auto;
+}
+.md-content pre code {
+  @apply text-slate-300 font-mono leading-relaxed;
+}
+
+/* 수식 블록 중앙 정렬 및 여백 */
+.katex-display {
+  @apply my-6 p-4 bg-slate-900/50 rounded-xl overflow-x-auto overflow-y-hidden;
+  color: #60a5fa; /* 수식 색상을 푸른색 계열로 강조 */
+}
+
+/* 인라인 수식 색상 */
+.katex {
+  @apply text-blue-400;
+}
+
+::-webkit-scrollbar {
+  width: 8px; /* 스크롤바 두께 */
+}
+
+::-webkit-scrollbar-track {
+  background: #020617; /* 배경색과 맞춤 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b; /* 살짝 밝은 네이비 */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+  image-rendering: pixelated; /* 도트가 뭉개지지 않게 */
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+    border: 2px solid rgba(30, 41, 59, 0.5);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.5);
+  }
+}

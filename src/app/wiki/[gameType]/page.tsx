@@ -5,11 +5,14 @@ import MetaTag from "@/components/common/MetaTag";
 import { getWikiContent, getAllWikiSlugs } from "@/lib/wiki";
 import { Metadata } from "next";
 
+export const dynamic = 'force-static';
+export const revalidate = false; // 정적 파일이므로 캐시 갱신 불필요
+
 // [핵심] 빌드 시점에 생성할 경로들을 정의합니다.
 export async function generateStaticParams() {
+  // 중복된 fs 로직 대신 이미 만든 유틸 함수 사용
   const slugs = getAllWikiSlugs();
   
-  // 결과: [{ gameType: 'yacht' }, { gameType: 'gomoku' }, ...]
   return slugs.map((slug) => ({
     gameType: slug,
   }));
