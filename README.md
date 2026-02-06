@@ -34,15 +34,3 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## ssh 포트 개방
-ssh -L 0.0.0.0:8080:localhost:8080 mows@192.168.64.2
-
-## TODO
-점수판 가독성
-주사위 컨트롤
-사운드 추가
-서렌을 도입할지 고민중
-
-## 요청
-루미큐브

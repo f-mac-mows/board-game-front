@@ -4,6 +4,7 @@ import "./globals.css";
 import AuthProvider from "@/components/providers/authProvider";
 import QueryProvider from "@/components/providers/queryProvider";
 import { Toaster } from "react-hot-toast";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://walrung.com'),
@@ -45,7 +46,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased selection:bg-blue-500/30 flex flex-col min-h-screen">
         <QueryProvider>
           <AuthProvider>
-            <main className="flex-1 overflow-auto">{children}</main>
+            <WebSocketProvider>
+              <main className="flex-1 overflow-auto">{children}</main>
+            </WebSocketProvider>
           </AuthProvider>
         </QueryProvider>
 

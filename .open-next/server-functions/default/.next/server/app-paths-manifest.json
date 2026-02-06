@@ -4,7 +4,7 @@
   "/auth/login/page": "app/auth/login/page.js",
   "/auth/signup/page": "app/auth/signup/page.js",
   "/cookie/page": "app/cookie/page.js",
-  "/game/yacht/[id]/page": "app/game/yacht/[id]/page.js",
+  "/game/[gameType]/[gameId]/page": "app/game/[gameType]/[gameId]/page.js",
   "/icon.png/route": "app/icon.png/route.js",
   "/login-success/page": "app/login-success/page.js",
   "/page": "app/page.js",

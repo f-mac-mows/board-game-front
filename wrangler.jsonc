@@ -11,5 +11,18 @@
     "binding": "ASSETS"
   },
   "workers_dev": true,
-  "preview_urls": true
+  "preview_urls": true,
+  "vars": {
+    "NEXT_PUBLIC_API_URL": "https://api.walrung.com/api"
+  },
+  "env": {
+    "dev": {
+      "name": "dev-board-game-front",
+      "vars": {
+        "NEXT_PUBLIC_API_URL": "https://api.walrung.com/api"
+      }
+    }
+  },
+  "keep_vars": true,
+  "send_metrics": false,
 }

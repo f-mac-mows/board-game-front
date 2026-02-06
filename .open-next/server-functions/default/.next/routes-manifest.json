@@ -22,12 +22,13 @@
   },
   "dynamicRoutes": [
     {
-      "page": "/game/yacht/[id]",
-      "regex": "^/game/yacht/([^/]+?)(?:/)?$",
+      "page": "/game/[gameType]/[gameId]",
+      "regex": "^/game/([^/]+?)/([^/]+?)(?:/)?$",
       "routeKeys": {
-        "nxtPid": "nxtPid"
+        "nxtPgameType": "nxtPgameType",
+        "nxtPgameId": "nxtPgameId"
       },
-      "namedRegex": "^/game/yacht/(?<nxtPid>[^/]+?)(?:/)?$"
+      "namedRegex": "^/game/(?<nxtPgameType>[^/]+?)/(?<nxtPgameId>[^/]+?)(?:/)?$"
     },
     {
       "page": "/ranking/[gameType]/[criteria]",

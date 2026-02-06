@@ -4,7 +4,7 @@
   "/auth/login/page": "/auth/login",
   "/auth/signup/page": "/auth/signup",
   "/cookie/page": "/cookie",
-  "/game/yacht/[id]/page": "/game/yacht/[id]",
+  "/game/[gameType]/[gameId]/page": "/game/[gameType]/[gameId]",
   "/icon.png/route": "/icon.png",
   "/login-success/page": "/login-success",
   "/page": "/",
