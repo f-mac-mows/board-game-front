@@ -154,6 +154,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
         newTable: cleanTable,
         newHand: cleanHand
       });
+      console.log("Current Turn:", currentTurnNickname, "My Name:", myNickname)
       toast.success("턴을 마쳤습니다.");
     } catch (err) {
       toast.error("제출에 실패했습니다.");

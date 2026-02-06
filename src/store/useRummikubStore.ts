@@ -34,39 +34,53 @@ export const useRummikubStore = create<RummikubState>((set) => ({
     setCurrentTurn: (name) => set({ currentTurnNickname: name }),
     setBoardValid: (isValid) => set({ isBoardValid: isValid }),
 
-    initializeGame: (data) => set(() => ({
-        boardTiles: data.table.flatMap((chunk, rowIndex) => 
+    initializeGame: (data) => set(() => {
+        // 보드 타일 배치: 서버 세트별로 행(Row)을 나누어 배치
+        const mappedBoard = (data.table || []).flatMap((chunk, rowIndex) => 
             chunk.map((tile, colIndex) => ({ ...tile, x: rowIndex, y: colIndex }))
-        ),
-        handTiles: data.myHand.map((tile, i) => ({
+        );
+        // 손패 배치: 20열씩 끊어서 배치
+        const mappedHand = (data.myHand || []).map((tile, i) => ({
             ...tile, x: Math.floor(i / 20), y: i % 20
-        }))
-    })),
+        }));
+
+        return { boardTiles: mappedBoard, handTiles: mappedHand };
+    }),
 
     moveTile: (tileId, to, x, y) => set((state) => {
-        const isBoard = to === 'board';
-        const all = [...state.boardTiles, ...state.handTiles];
-        const moving = all.find(t => t.id.toString() === tileId);
-        if (!moving) return state;
-
-        const newBoard = state.boardTiles.filter(t => t.id.toString() !== tileId);
-        const newHand = state.handTiles.filter(t => t.id.toString() !== tileId);
+        // 1. 전체 타일에서 움직일 타일 찾기
+        const allTiles = [...state.boardTiles, ...state.handTiles];
+        const movingTile = allTiles.find(t => t.id.toString() === tileId.toString());
         
-        const targetList = isBoard ? [...newBoard] : [...newHand];
-        targetList.push({ ...moving, x, y });
+        if (!movingTile) return state;
 
-        return isBoard ? { boardTiles: targetList, handTiles: newHand } : { boardTiles: newBoard, handTiles: targetList };
+        // 2. 기존 위치에서 제거
+        const filteredBoard = state.boardTiles.filter(t => t.id.toString() !== tileId.toString());
+        const filteredHand = state.handTiles.filter(t => t.id.toString() !== tileId.toString());
+
+        // 3. 목적지에 타일 추가 (좌표 업데이트)
+        const updatedTile = { ...movingTile, x, y };
+
+        return to === 'board' 
+            ? { boardTiles: [...filteredBoard, updatedTile], handTiles: filteredHand }
+            : { boardTiles: filteredBoard, handTiles: [...filteredHand, updatedTile] };
     }),
 
     moveTileRemote: (tileId, x, y) => set((state) => ({
-        boardTiles: state.boardTiles.map(t => t.id === tileId ? { ...t, x, y } : t)
+        // 원격 이동은 보드 내에서의 이동만 처리하는 경우가 많음
+        boardTiles: state.boardTiles.map(t => 
+            t.id.toString() === tileId.toString() ? { ...t, x, y } : t
+        )
     })),
 
     sortHand: (type) => set((state) => {
         const sorted = [...state.handTiles].sort((a, b) => 
-            type === 'color' ? (a.color.localeCompare(b.color) || a.number - b.number) 
-                             : (a.number - b.number || a.color.localeCompare(b.color))
+            type === 'color' 
+                ? (a.color.localeCompare(b.color) || a.number - b.number) 
+                : (a.number - b.number || a.color.localeCompare(b.color))
         );
-        return { handTiles: sorted.map((t, i) => ({ ...t, x: Math.floor(i / 20), y: i % 20 })) };
+        return { 
+            handTiles: sorted.map((t, i) => ({ ...t, x: Math.floor(i / 20), y: i % 20 })) 
+        };
     })
 }));
