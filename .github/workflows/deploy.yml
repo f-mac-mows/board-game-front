@@ -32,3 +32,6 @@ jobs:
           preCommands: npm run build
           command: deploy
           environment: ${{ github.ref_name == 'main' && '' || 'dev' }}
+        env:
+          # 🚩 빌드 시점에 환경 변수를 넘겨줘야 Next.js가 코드에 구워넣습니다.
+          NEXT_PUBLIC_API_URL: https://api.walrung.com/api
