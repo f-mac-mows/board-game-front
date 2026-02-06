@@ -11,5 +11,8 @@
     "binding": "ASSETS"
   },
   "workers_dev": true,
-  "preview_urls": true
+  "preview_urls": true,
+  "vars": {
+    "NEXT_PUBLIC_API_URL": "https://api.walrung.com"
+  }
 }
