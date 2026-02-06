@@ -25,6 +25,9 @@ jobs:
       - name: Build and Deploy
         # wrangler-action을 사용하면 환경 변수 주입이 더 깔끔합니다.
         uses: cloudflare/wrangler-action@v3
+        env:
+          # 🚩 이 스텝 전체에서 빌드 시점에 이 값을 쓰도록 명시
+          NEXT_PUBLIC_API_URL: https://api.walrung.com/api
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -32,6 +35,3 @@ jobs:
           preCommands: npm run build
           command: deploy
           environment: ${{ github.ref_name == 'main' && '' || 'dev' }}
-        env:
-          # 🚩 빌드 시점에 환경 변수를 넘겨줘야 Next.js가 코드에 구워넣습니다.
-          NEXT_PUBLIC_API_URL: https://api.walrung.com/api
