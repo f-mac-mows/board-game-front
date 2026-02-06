@@ -75,12 +75,14 @@ export default async function WikiDetailPage({
 }: { 
   params: Promise<{ gameType: string }> 
 }) {
-  const { gameType } = await params;
-
-  if (!gameType) return notFound();
+  const resolvedParams = await params;
+  // 슬러그를 소문자로 통일하여 검색
+  const gameType = resolvedParams.gameType.toLowerCase();
 
   const type = gameType.toUpperCase() as GameTypeCode;
   const config = GAME_TYPE_CONFIG[type];
+  
+  // 중요: 빌드 로그에서 성공했던 로직 그대로 호출되는지 확인
   const content = getWikiContent(gameType);
 
   if (!config || !content) {

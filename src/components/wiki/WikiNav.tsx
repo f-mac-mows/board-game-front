@@ -33,7 +33,7 @@ export default function WikiNav() {
         <div className="h-4 w-px bg-slate-800 shrink-0" />
         
         {Object.entries(GAME_TYPE_CONFIG).map(([key, detail]) => {
-          const href = `/wiki/${key.toLowerCase()}`;
+          const href = `/wiki/${key.toLowerCase()}/`;
           const isActive = pathname === href;
 
           return (

@@ -5,11 +5,15 @@ import MetaTag from "@/components/common/MetaTag";
 import { getWikiContent, getAllWikiSlugs } from "@/lib/wiki";
 import { Metadata } from "next";
 
+export const dynamicParams = false;
+export const dynamic = 'force-static';
+export const revalidate = false; // 정적 파일이므로 캐시 갱신 불필요
+
 // [핵심] 빌드 시점에 생성할 경로들을 정의합니다.
 export async function generateStaticParams() {
+  // 중복된 fs 로직 대신 이미 만든 유틸 함수 사용
   const slugs = getAllWikiSlugs();
   
-  // 결과: [{ gameType: 'yacht' }, { gameType: 'gomoku' }, ...]
   return slugs.map((slug) => ({
     gameType: slug,
   }));
@@ -71,12 +75,14 @@ export default async function WikiDetailPage({
 }: { 
   params: Promise<{ gameType: string }> 
 }) {
-  const { gameType } = await params;
-
-  if (!gameType) return notFound();
+  const resolvedParams = await params;
+  // 슬러그를 소문자로 통일하여 검색
+  const gameType = resolvedParams.gameType.toLowerCase();
 
   const type = gameType.toUpperCase() as GameTypeCode;
   const config = GAME_TYPE_CONFIG[type];
+  
+  // 중요: 빌드 로그에서 성공했던 로직 그대로 호출되는지 확인
   const content = getWikiContent(gameType);
 
   if (!config || !content) {

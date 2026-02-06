@@ -20,5 +20,11 @@
       "custom_domain": true,
       "pattern": "walrung.com" 
     }
-  ]
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
 }
