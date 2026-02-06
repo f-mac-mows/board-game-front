@@ -22,10 +22,9 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
     const shouldConnect = pathname.startsWith("/rooms") || pathname.startsWith("/game");
 
     useEffect(() => {
-        // 연결이 필요 없는 경로거나 이미 연결된 경우 방지
+        // 1. 소켓이 필요 없는 경로로 나갈 때만 해제
         if (!shouldConnect) {
             if (stompClient.current) {
-                console.log("🔌 소켓 연결이 필요 없는 경로입니다. 연결을 해제합니다.");
                 stompClient.current.deactivate();
                 stompClient.current = null;
                 setIsConnected(false);
@@ -33,26 +32,25 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
             return;
         }
 
-        if (stompClient.current?.connected) return;
+        // 2. 이미 연결 중이라면 아무것도 하지 않음 (중요: pathname이 바뀌어도 유지)
+        if (stompClient.current?.connected || stompClient.current?.active) {
+            return;
+        }
 
+        // 3. 소켓 생성 및 연결
         const socket = new SockJS(`https://api.walrung.com/ws-game`);
         const client = Stomp.over(socket);
         client.debug = () => {}; 
         
         client.connect({}, () => {
-            console.log("🌐 게임 소켓 연결 성공:", pathname);
+            console.log("🌐 소켓 연결 성공");
             setIsConnected(true);
-            stompClient.current = client;
         });
+        
+        stompClient.current = client;
 
-        return () => {
-            // 경로가 바뀌어서 shouldConnect가 false가 될 때 clean-up
-            if (stompClient.current) {
-                stompClient.current.deactivate();
-                setIsConnected(false);
-            }
-        };
-    }, [shouldConnect, pathname]); // 경로가 바뀔 때마다 체크
+        // cleanup: 컴포넌트 언마운트 시에만 해제 (의존성에서 pathname 제거)
+    }, [shouldConnect]); // pathname을 빼고 shouldConnect만 남깁니다.
 
     const subscribe = (topic: string, callback: (payload: any) => void) => {
         if (!stompClient.current || !isConnected) return () => {};
