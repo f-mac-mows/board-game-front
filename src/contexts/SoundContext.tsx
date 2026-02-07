@@ -25,7 +25,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const isFirstRender = useRef(true);
 
   // 1. 상태 정의 (초기값은 로컬 스토리지에서 먼저 읽어옴)
-  const [muted, setMutedState] = useState(() => {
+  const [isMuted, setMutedState] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('sound_muted') === 'true';
     }
@@ -45,13 +45,13 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   // 2. 사운드 정의
   const [playDice] = useSound('/sounds/dice.ogg', { 
     volume: volume * 0.8,
-    soundEnabled: !muted 
+    soundEnabled: !isMuted 
   });
 
   const [play, { stop, sound }] = useSound(currentBGM, {
     volume: volume * 0.4,
     loop: true,
-    soundEnabled: !muted,
+    soundEnabled: !isMuted,
     interrupt: true,
   });
 
@@ -60,10 +60,10 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       userApi.getUserSetting()
         .then(({ data }) => {
-          setMutedState(data.muted);
+          setMutedState(data.isMuted);
           setVolumeState(data.volume);
           // 서버에서 온 값을 로컬 스토리지에도 즉시 저장 (새로고침 시 유지용)
-          localStorage.setItem('sound_muted', String(data.muted));
+          localStorage.setItem('sound_isMuted', String(data.isMuted));
           localStorage.setItem('sound_volume', String(data.volume));
         })
         .catch((err) => console.error("설정 로드 실패:", err));
@@ -72,15 +72,15 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
   // 4. [자동 재생] BGM 로드 완료 시 재생 시도
   useEffect(() => {
-    if (user && sound && !muted && !sound.playing()) {
+    if (user && sound && !isMuted && !sound.playing()) {
       play();
     }
-  }, [user, sound, muted, play]);
+  }, [user, sound, isMuted, play]);
 
   // 5. [브라우저 잠금 해제] 첫 상호작용 시 오디오 잠금 해제
   useEffect(() => {
     const handleFirstInteraction = () => {
-      if (user && sound && !sound.playing() && !muted) {
+      if (user && sound && !sound.playing() && !isMuted) {
         play();
       }
       window.removeEventListener('click', handleFirstInteraction);
@@ -88,10 +88,10 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('click', handleFirstInteraction);
     return () => window.removeEventListener('click', handleFirstInteraction);
-  }, [user, sound, muted, play]);
+  }, [user, sound, isMuted, play]);
 
   // 6. 서버 저장 로직 (디바운스 활용)
-  const debouncedSettings = useDebounce({ muted, volume }, 1000);
+  const debouncedSettings = useDebounce({ isMuted, volume }, 1000);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -142,7 +142,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       playBGM, 
       stopBGM: stop, 
       playDice, 
-      isMuted: muted,
+      isMuted: isMuted,
       setIsMuted,
       volume,
       setVolume

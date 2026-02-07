@@ -57,6 +57,6 @@ export interface UserProfileResponse {
 }
 
 export interface UserSetting {
-    muted: boolean;
+    isMuted: boolean;
     volume: number;
 }
