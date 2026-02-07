@@ -24,14 +24,14 @@ export default function RankingLayout({ children }: { children: React.ReactNode 
               <p className="text-slate-500 text-sm font-medium italic">최고의 실력을 가진 플레이어들을 확인하세요.</p>
             </div>
 
-            {/* 홈으로 돌아가기 버튼 (UserLayout과 동일 스타일) */}
+            {/* 대시보드로 돌아가기 버튼 (UserLayout과 동일 스타일) */}
             <button 
-                onClick={() => router.push('/')}
+                onClick={() => router.push('/user')}
                 className="w-full lg:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-2xl transition-all group active:scale-95 shadow-xl"
             >
                 <Home size={18} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
                 <span className="text-xs font-black text-slate-500 group-hover:text-white uppercase tracking-[0.2em]">
-                    Return Lobby
+                    Return MyDashboard
                 </span>
             </button>
           </div>
