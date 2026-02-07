@@ -34,7 +34,6 @@ export default function GameHistoryDetailPage() {
     };
 
     const handleRewardAd = async (historyId: number) => {
-        console.log(`${historyId}번 보상 광고 실행`);
         const success = confirm("광고를 시청하고 보상을 2배로 받으시겠습니까?");
         if (success) alert("보상이 지급되었습니다!");
     };
@@ -73,7 +72,6 @@ export default function GameHistoryDetailPage() {
                 <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] ml-2">Match History</h4>
                 {filteredHistories.length > 0 ? (
                     filteredHistories.map((h) => {
-                        console.log("히스토리 샘플:", filteredHistories[0]);
                         const style = getStyle(h.result);
                         const uniqueKey = h.id || `history-${h.gameId}`
                         const isExpanded = expandedId === h.gameId;

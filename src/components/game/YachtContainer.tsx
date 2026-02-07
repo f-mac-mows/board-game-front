@@ -122,7 +122,6 @@ export default function YachtGamePage({ gameId }: { gameId: string}) {
                 break;
 
             case 'TURN_CHANGED':
-                console.log(event.nextTurn);
                 syncGameStatus().then(() => {
                     // 서버에서 준 다음 턴 정보가 있다면 그걸 우선 사용, 없으면 sync 결과 사용
                     resetTurnState(event.nextTurn);

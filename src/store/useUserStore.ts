@@ -55,8 +55,6 @@ export const useUserStore = create<UserState>()(
                 
                 // 4. (선택 사항) 세션 스토리지 등 기타 흔적 제거
                 sessionStorage.clear();
-
-                console.log("User store cleared.");
             },
         }),
         {

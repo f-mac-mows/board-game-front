@@ -48,10 +48,17 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const [currentBGM, setCurrentBGM] = useState<string>("/sounds/main-bgm.ogg");
 
   // 2. 사운드 정의
-  const [playDice] = useSound('/sounds/dice.ogg', { 
+  const [_playDice] = useSound('/sounds/dice.ogg', { 
     volume: volume * 0.8,
     soundEnabled: !isMuted 
   });
+
+  const playDice = () => {
+    if (isMuted) {
+      return;
+    }
+    _playDice();
+  };
 
   const [play, { stop, sound }] = useSound(currentBGM, {
     volume: volume * 0.4,

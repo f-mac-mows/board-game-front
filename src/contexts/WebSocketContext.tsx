@@ -25,7 +25,6 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
         // 1. 소켓이 필요 없는 경로라면 연결 해제
         if (!shouldConnect) {
             if (clientRef.current) {
-                console.log("🔌 소켓 연결 종료");
                 clientRef.current.deactivate();
                 clientRef.current = null;
                 setIsConnected(false);
@@ -55,7 +54,6 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
         };
 
         client.onDisconnect = () => {
-            console.log("📡 소켓 연결 끊김");
             setIsConnected(false);
         };
 
@@ -65,7 +63,6 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
         // ✨ Cleanup 함수 추가
         return () => {
             if (clientRef.current) {
-                console.log("🧹 언마운트 시 소켓 정리");
                 clientRef.current.deactivate();
                 clientRef.current = null;
             }
