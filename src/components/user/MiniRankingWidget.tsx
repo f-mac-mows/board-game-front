@@ -9,15 +9,14 @@ import { cn } from "@/lib/utils";
 export default function MiniRankingWidget() {
     const router = useRouter();
     const [mounted, setMounted] = useState(false); // ✨ 마운트 상태 추가
+    // 랭킹 데이터 호출
+    const { data: rankings, isLoading } = useRanking("user", "level", 0);
+    const topThree = rankings?.slice(0, 3) ?? [];
 
     // 마운트 효과
     useEffect(() => {
         setMounted(true);
     }, []);
-
-    // 랭킹 데이터 호출
-    const { data: rankings, isLoading } = useRanking("user", "level", 0);
-    const topThree = rankings?.slice(0, 3) ?? [];
 
     /**
      * [핵심 수정] 서버 프리렌더링 시점에는 '아무것도' 렌더링하지 않습니다.

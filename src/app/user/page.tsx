@@ -8,12 +8,9 @@ import MiniRankingWidget from '@/components/user/MiniRankingWidget';
 import { Wallet, Sparkles, Award, Zap, Trophy } from 'lucide-react';
 
 export default function UserProfilePage() {
+    // [규칙 1] 모든 State와 Hook 선언을 최상단에 배치
     const [mounted, setMounted] = useState(false);
-    
-    // 1. Zustand에서 세션 정보 및 통합 레벨(astat) 추출
     const { user: session } = useUserStore();
-    
-    // 2. React Query에서 실시간 데이터(asset, stats) 추출
     const { data: serverData, isLoading: isStatsLoading } = useUserStats();
     const { achievements, isLoading: isAchLoading } = useAchievements();
 
@@ -21,28 +18,17 @@ export default function UserProfilePage() {
         setMounted(true);
     }, []);
 
-    // SSR 및 초기 로딩 가드
-    if (!mounted) return <div className="min-h-screen bg-slate-950" />;
-
-    // 로딩 처리: 세션 데이터가 확인될 때까지
-    if (!session || isStatsLoading) {
-        return (
-            <div className="flex justify-center items-center h-64 text-slate-500 animate-pulse font-bold">
-                데이터를 동기화 중입니다...
-            </div>
-        );
-    }
-
-    // 3. 통합 레벨 연산 (Zustand의 session.astat 사용)
+    // [규칙 2] useMemo 같은 연산 훅도 Early Return보다 무조건 위에 있어야 함
     const accountLevelInfo = useMemo(() => {
-        const a = session.astat;
+        // 데이터가 없을 때를 대비한 방어 로직을 내부에서 처리
+        const a = session?.astat;
         const current = a?.currentExp ?? 0;
         const required = a?.requiredExp ?? 1000;
         const level = a?.level ?? 1;
         const percent = Math.min((current / required) * 100, 100);
         
         return { current, required, level, percent };
-    }, [session.astat]);
+    }, [session?.astat]);
 
     const recentAchievements = useMemo(() => {
         if (!achievements) return [];
@@ -51,6 +37,22 @@ export default function UserProfilePage() {
             .sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime())
             .slice(0, 3);
     }, [achievements]);
+
+    // [규칙 3] 모든 훅 선언이 끝난 "직후"에 조건부 리턴(가드)을 배치
+    
+    // 1순위 가드: SSR 하이드레이션 방어
+    if (!mounted) {
+        return <div className="min-h-screen bg-slate-950" />;
+    }
+
+    // 2순위 가드: 데이터 로딩 및 세션 체크
+    if (!session || isStatsLoading) {
+        return (
+            <div className="flex justify-center items-center h-64 text-slate-500 animate-pulse font-bold">
+                데이터를 동기화 중입니다...
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
