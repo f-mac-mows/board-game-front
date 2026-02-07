@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react'; // ✨ useEffect 추가
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/useUserStore';
 import { useHistories } from '@/hooks/useHistories';
@@ -14,13 +14,12 @@ import {
 
 export default function UserStatusPage() {
     const router = useRouter();
-    const [mounted, setMounted] = useState(false); // ✨ 마운트 상태 추가
-    const { user } = useUserStore(); 
+    const [mounted, setMounted] = useState(false);
+    const { user: session } = useUserStore(); 
     
-    // 1. 모든 훅 호출을 최상단에 배치 (조건문보다 위)
+    // 1. 모든 훅 호출 (순서 고정)
     const { data: serverData, isLoading: isStatsLoading } = useUserStats();
-    const { histories, isLoading: isHistoryLoading } = useHistories();
-    
+    const { histories } = useHistories();
     const [search, setSearch] = useState("");
     const [selectedStat, setSelectedStat] = useState<StatInfo | null>(null);
 
@@ -28,9 +27,10 @@ export default function UserStatusPage() {
         setMounted(true);
     }, []);
 
-    // 2. 필터링 로직 (데이터가 없을 때의 방어 로직을 포함)
+    // 2. 필터링 로직 (serverData 전체를 감시하여 데이터 도착 시 즉시 반영)
     const filteredStats = useMemo(() => {
-        const stats = serverData?.stats || []; // null 대비
+        const stats = serverData?.stats || [];
+        if (stats.length > 0) console.log("Filtering stats...", stats);
         if (stats.length === 0) return [];
         
         return stats.filter(s => {
@@ -38,16 +38,17 @@ export default function UserStatusPage() {
             const gameNameKR = GAME_TYPE_CONFIG[s.gameType as GameTypeCode]?.description || "";
             return s.gameType.toLowerCase().includes(searchLower) || gameNameKR.includes(searchLower);
         });
-    }, [serverData?.stats, search]);
+    }, [serverData, search]); // serverData?.stats 대신 serverData 전체를 감시
 
+    // 티어 정보 계산 함수
     const getTierInfo = (mmr: number) => {
         if (mmr >= 2000) return { icon: <Trophy size={18} className="text-yellow-400" />, label: "Diamond", color: "from-yellow-500/10", border: "border-yellow-500/20" };
         if (mmr >= 1500) return { icon: <Award size={18} className="text-blue-400" />, label: "Platinum", color: "from-blue-400/10", border: "border-blue-400/20" };
         if (mmr >= 1200) return { icon: <Medal size={18} className="text-slate-400" />, label: "Gold", color: "from-slate-400/10", border: "border-slate-400/20" };
         return { icon: <Medal size={18} className="text-orange-600" />, label: "Bronze", color: "from-orange-600/10", border: "border-orange-600/20" };
     };
-    
-    // 3. 승률 계산 함수
+
+    // 승률 계산 함수
     const calculateWinRate = (stat: StatInfo) => {
         const total = stat.wins + stat.losses + (stat.draws || 0);
         if (total === 0) return "0.0";
@@ -55,23 +56,30 @@ export default function UserStatusPage() {
         return ((effectiveWins / total) * 100).toFixed(1);
     };
 
-    // 하이드레이션 오류 방지
+    // --- 렌더링 가드 ---
+
+    // 1. 하이드레이션 방지
     if (!mounted) return <div className="min-h-screen bg-slate-950" />;
 
-    // 데이터 로딩 중이거나 유저 세션이 없을 때
-    if (!user || isStatsLoading) return (
-        <div className="flex flex-col items-center justify-center p-20 text-slate-500">
-            <Loader2 className="animate-spin mb-4" />
-            <p className="font-bold">실시간 게임 데이터를 동기화 중입니다...</p>
-        </div>
-    );
+    // 2. 로딩 가드 (데이터가 아예 없을 때만 로딩 바 표시)
+    if (!session || (isStatsLoading && !serverData)) {
+        return (
+            <div className="flex flex-col items-center justify-center p-20 text-slate-500">
+                <Loader2 className="animate-spin mb-4 text-emerald-500" />
+                <p className="font-bold">실시간 데이터를 동기화 중입니다...</p>
+            </div>
+        );
+    }
 
-    // 데이터가 비어있을 때 (검색 결과가 없는 게 아니라 아예 스탯이 없는 경우)
+    // 3. 데이터 없음 가드 (로딩이 끝났는데 데이터가 0개인 경우)
     if (!isStatsLoading && (!serverData?.stats || serverData.stats.length === 0)) {
         return (
             <div className="flex flex-col items-center justify-center p-20 text-slate-500 border-2 border-dashed border-slate-800 rounded-4xl">
                 <LayoutGrid size={48} className="mb-4 opacity-20" />
                 <p>아직 기록된 게임 통계가 없습니다.</p>
+                <div className="text-white">
+                    검색된 개수: {filteredStats.length}개 / 전체 개수: {serverData?.stats?.length}개
+                </div>
             </div>
         );
     }
@@ -145,7 +153,7 @@ export default function UserStatusPage() {
             {selectedStat && (
                 <StatDetailModal 
                     stat={selectedStat} 
-                    nickname={user.nickname}
+                    nickname={session?.nickname || ""}
                     histories={histories}
                     winRate={calculateWinRate(selectedStat)}
                     onClose={() => setSelectedStat(null)} 
@@ -155,7 +163,7 @@ export default function UserStatusPage() {
     );
 }
 
-// --- 상세 모달 컴포넌트 (동일) ---
+// 상세 모달 컴포넌트 (동일)
 function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat: StatInfo, nickname: string, histories: any[], winRate: string, onClose: () => void }) {
     const router = useRouter();
     const currentExp = stat.exp % 1000;
