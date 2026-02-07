@@ -23,11 +23,16 @@ const SoundContext = createContext<SoundContextType | undefined>(undefined);
 export function SoundProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUserStore();
   const isFirstRender = useRef(true);
+  
+  // ✨ 무한 루프 방지: 마지막으로 서버 동기화에 성공한 값을 저장
+  const lastSyncedSettings = useRef({ isMuted: false, volume: 0.5 });
+  // ✨ 업데이트 중복 방지 락
+  const isUpdating = useRef(false);
 
-  // 1. 상태 정의 (초기값은 로컬 스토리지에서 먼저 읽어옴)
+  // 1. 상태 정의 (초기값 로드)
   const [isMuted, setMutedState] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('sound_muted') === 'true';
+      return localStorage.getItem('sound_isMuted') === 'true';
     }
     return false;
   });
@@ -54,35 +59,37 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     soundEnabled: !isMuted,
     interrupt: true,
     onload: () => {
-    if (user && !isMuted && sound && !sound.playing()) {
-      play();
+      // 로드 완료 시 유저가 있고 재생 중이 아니면 실행
+      if (user && !isMuted && sound && !sound.playing()) {
+        play();
+      }
     }
-  }
   });
 
-  // 3. [자동 동기화 및 재생] 유저 로그인 시 서버 설정 불러오기
+  // 3. [최초 로드] 유저 로그인 시 서버 설정 불러오기
   useEffect(() => {
-    if (user) {
+    if (user?.email) { // 객체 전체 대신 id를 감시하여 불필요한 트리거 방지
       userApi.getUserSetting()
         .then(({ data }) => {
           setMutedState(data.isMuted);
           setVolumeState(data.volume);
-          // 서버에서 온 값을 로컬 스토리지에도 즉시 저장 (새로고침 시 유지용)
+          lastSyncedSettings.current = { isMuted: data.isMuted, volume: data.volume };
+          
           localStorage.setItem('sound_isMuted', String(data.isMuted));
           localStorage.setItem('sound_volume', String(data.volume));
         })
         .catch((err) => console.error("설정 로드 실패:", err));
     }
-  }, [user]);
+  }, [user?.email]);
 
-  // 4. [자동 재생] BGM 로드 완료 시 재생 시도
+  // 4. [재생 보장] BGM 객체나 유저 상태 변경 시 재생 시도
   useEffect(() => {
     if (user && sound && !isMuted && !sound.playing()) {
       play();
     }
   }, [user, sound, isMuted, play]);
 
-  // 5. [브라우저 잠금 해제] 첫 상호작용 시 오디오 잠금 해제
+  // 5. [브라우저 정책 대응] 첫 상호작용 시 잠금 해제
   useEffect(() => {
     const handleFirstInteraction = () => {
       if (user && sound && !sound.playing() && !isMuted) {
@@ -90,24 +97,47 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       }
       window.removeEventListener('click', handleFirstInteraction);
     };
-
     window.addEventListener('click', handleFirstInteraction);
     return () => window.removeEventListener('click', handleFirstInteraction);
   }, [user, sound, isMuted, play]);
 
-  // 6. 서버 저장 로직 (디바운스 활용)
-  const debouncedSettings = useDebounce({ isMuted, volume }, 1000);
+  // 6. ✨ 서버 저장 로직 (디바운스 + 비교 가드)
+  const debouncedSettings = useDebounce({ isMuted, volume }, 1500);
 
   useEffect(() => {
+    // 첫 렌더링 무시
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    if (user) {
-      userApi.updateSettings(debouncedSettings)
-        .catch((err) => console.error("❌ Sync failed", err));
+
+    // 유저가 없거나 이미 요청 중이면 중단
+    if (!user || isUpdating.current) return;
+
+    // ✨ 핵심: 실제 값이 변했는지 참조가 아닌 '값'으로 비교
+    if (
+      lastSyncedSettings.current.isMuted === debouncedSettings.isMuted &&
+      lastSyncedSettings.current.volume === debouncedSettings.volume
+    ) {
+      return;
     }
-  }, [debouncedSettings, user]);
+
+    const syncSettings = async () => {
+      isUpdating.current = true;
+      try {
+        await userApi.updateSettings(debouncedSettings);
+        // 성공 시에만 동기화 기준점 업데이트
+        lastSyncedSettings.current = { ...debouncedSettings };
+      } catch (err) {
+        // 502 에러 등이 발생해도 루프에 빠지지 않도록 로그만 출력
+        console.error("❌ 서버 동기화 실패 (무한 루프 방지를 위해 요청 중단):", err);
+      } finally {
+        isUpdating.current = false;
+      }
+    };
+
+    syncSettings();
+  }, [debouncedSettings, user?.email]);
 
   // 7. 로그아웃 처리
   useEffect(() => {
@@ -116,8 +146,9 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       setMutedState(false);
       setVolumeState(0.5);
       setCurrentBGM("/sounds/main-bgm.ogg");
-      localStorage.removeItem('sound_muted');
+      localStorage.removeItem('sound_isMuted');
       localStorage.removeItem('sound_volume');
+      lastSyncedSettings.current = { isMuted: false, volume: 0.5 };
     }
   }, [user, stop]);
 
@@ -125,8 +156,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const setIsMuted = (value: boolean) => {
     setMutedState(value);
     localStorage.setItem('sound_isMuted', String(value));
-    if (!value) play(); // 음소거 해제 시 재생
-    else stop();        // 음소거 시 즉시 정지
+    if (!value) play();
+    else stop();
   };
 
   const setVolume = (value: number) => {
@@ -147,7 +178,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
       playBGM, 
       stopBGM: stop, 
       playDice, 
-      isMuted: isMuted,
+      isMuted,
       setIsMuted,
       volume,
       setVolume
