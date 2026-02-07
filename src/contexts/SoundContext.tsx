@@ -13,7 +13,7 @@ interface SoundContextType {
   stopBGM: () => void;
   playDice: () => void;
   isMuted: boolean;
-  setIsMuted: (muted: boolean) => void;
+  setIsMuted: (isMuted: boolean) => void;
   volume: number;
   setVolume: (volume: number) => void;
 }
@@ -124,7 +124,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   // 8. 핸들러 함수들
   const setIsMuted = (value: boolean) => {
     setMutedState(value);
-    localStorage.setItem('sound_muted', String(value));
+    localStorage.setItem('sound_isMuted', String(value));
     if (!value) play(); // 음소거 해제 시 재생
     else stop();        // 음소거 시 즉시 정지
   };
