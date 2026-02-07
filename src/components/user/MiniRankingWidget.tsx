@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react"; // ✨ 추가
 import { useRanking } from "@/hooks/useRanking";
 import { useRouter } from "next/navigation";
 import { TrendingUp, ChevronRight, Crown } from "lucide-react";
@@ -7,12 +8,31 @@ import { cn } from "@/lib/utils";
 
 export default function MiniRankingWidget() {
     const router = useRouter();
-    // 통합(user) 레벨(level) 랭킹 상위 3명만 가져옴
+    const [mounted, setMounted] = useState(false); // ✨ 마운트 상태 추가
+
+    // 마운트 효과
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // 랭킹 데이터 호출
     const { data: rankings, isLoading } = useRanking("user", "level", 0);
     const topThree = rankings?.slice(0, 3) ?? [];
 
+    /**
+     * [핵심 수정] 서버 프리렌더링 시점에는 '아무것도' 렌더링하지 않습니다.
+     * 이렇게 하면 서버와 클라이언트의 첫 HTML이 일치하게 되어 310 에러가 사라집니다.
+     */
+    if (!mounted) {
+        return (
+            <div className="flex flex-col h-full opacity-0">
+                <div className="h-64 bg-slate-900/50 rounded-4xl animate-pulse" />
+            </div>
+        );
+    }
+
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full animate-in fade-in duration-500">
             <h3 className="text-sm font-black mb-4 flex items-center gap-2 text-slate-500 uppercase tracking-widest">
                 <TrendingUp size={16} /> Global Status
             </h3>
@@ -68,7 +88,6 @@ export default function MiniRankingWidget() {
                     View Leaderboard <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                 </button>
 
-                {/* 배경 장식 */}
                 <Crown size={120} className="absolute -bottom-4 -right-4 text-emerald-500/5 -rotate-12 group-hover:scale-110 transition-transform duration-700" />
             </div>
         </div>
