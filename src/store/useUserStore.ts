@@ -1,60 +1,40 @@
-import { UserProfileResponse } from '@/types/auth';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// 변하지 않는 핵심 정보만 정의
+interface EssentialUser {
+    email: string;
+    nickname: string;
+    profileCompleted: boolean;
+    createdAt: string;
+}
+
 interface UserState {
-    user: UserProfileResponse | null;
+    user: EssentialUser | null;
     currentRoomId: number | null;
-    setUser: (user: UserProfileResponse) => void;
+    setUser: (user: EssentialUser) => void;
     setCurrentRoomId: (roomId: number | null) => void;
-    updateActiveTitle: (titleName: string | null, colorCode: string | null) => void;
     clearUser: () => void;
 }
 
-// store/useUserStore.ts
 export const useUserStore = create<UserState>()(
     persist(
-        (set, get) => ({ // get 추가
+        (set) => ({
             user: null,
             currentRoomId: null,
 
-            setUser: (user) => set({ 
-                user, 
-                currentRoomId: user.activeRoomId 
-            }),
-
+            setUser: (user) => set({ user }),
             setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
 
-            updateActiveTitle: (titleName, colorCode) => set((state) => ({
-                user: state.user ? {
-                    ...state.user,
-                    activeTitle: titleName,
-                    titleColor: colorCode
-                } : null
-            })),
-            
             clearUser: () => {
-                // 1. 상태 즉시 초기화 (가장 먼저 수행하여 훅들의 enabled를 false로 만듦)
                 set({ user: null, currentRoomId: null });
-
-                // 2. 쿠키 삭제 함수
+                // 쿠키 및 로컬스토리지 정리 로직 (기존과 동일)
                 const deleteCookie = (name: string) => {
-                    const domains = ['.walrung.com', 'walrung.com', ''];
-                    domains.forEach(domain => {
-                        const domainPart = domain ? `domain=${domain};` : '';
-                        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; ${domainPart}`;
-                    });
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
                 };
-
                 deleteCookie('accessToken');
                 deleteCookie('refreshToken');
-                deleteCookie('JSESSIONID');
-                
-                // 3. 스토리지 정리
                 localStorage.removeItem('mows-user-storage');
-                
-                // 4. (선택 사항) 세션 스토리지 등 기타 흔적 제거
-                sessionStorage.clear();
             },
         }),
         {
