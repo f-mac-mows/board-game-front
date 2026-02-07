@@ -24,39 +24,58 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUserStore();
   const isFirstRender = useRef(true);
 
-  // 1. 상태 정의 (순서: 상태 -> 사운드 정의 -> 효과(Effect))
   const [muted, setMutedState] = useState(false);
   const [volume, setVolumeState] = useState(0.5);
   const [currentBGM, setCurrentBGM] = useState<string>("/sounds/main-bgm.ogg");
 
-  // 2. use-sound 정의 (여기서 stop을 미리 선언해야 아래 Effect에서 사용 가능)
+  // 1. use-sound 정의 (sound 객체를 꺼내서 상태 확인용으로 사용)
   const [playDice] = useSound('/sounds/dice.ogg', { 
     volume: volume * 0.8,
     soundEnabled: !muted 
   });
 
-  const [play, { stop }] = useSound(currentBGM, {
+  const [play, { stop, sound }] = useSound(currentBGM, {
     volume: volume * 0.4,
     loop: true,
     soundEnabled: !muted,
     interrupt: true,
   });
 
-  // 3. 로그아웃 감지 및 상태 초기화 (stop이 정의된 후에 위치해야 함)
+  // 2. [자동 재생 로직] 로그인된 상태에서 소리가 안 나고 있다면 재생 시도
+  useEffect(() => {
+    if (user && sound && !muted && !sound.playing()) {
+      play();
+    }
+  }, [user, sound, muted, play]);
+
+  // 3. [브라우저 잠금 해제] 로그인 후 첫 클릭 시 오디오 차단 해제
+  useEffect(() => {
+    const handleFirstClick = () => {
+      if (user && sound && !sound.playing() && !muted) {
+        play();
+      }
+      window.removeEventListener('click', handleFirstClick);
+    };
+
+    if (user) {
+      window.addEventListener('click', handleFirstClick);
+    }
+    return () => window.removeEventListener('click', handleFirstClick);
+  }, [user, sound, muted, play]);
+
+  // 4. 로그아웃 처리
   useEffect(() => {
     if (!user) {
-      stop(); // BGM 중단
+      stop();
       setMutedState(false);
       setVolumeState(0.5);
       setCurrentBGM("/sounds/main-bgm.ogg");
-      
       localStorage.removeItem('sound_muted');
       localStorage.removeItem('sound_volume');
-      console.log("Logout: Sounds stopped.");
     }
   }, [user, stop]);
 
-  // 4. 초기 데이터 로드 (DB -> LocalStorage)
+  // 5. 초기 데이터 로드 (DB -> LocalStorage)
   useEffect(() => {
     if (user) {
       userApi.getUserSetting()
@@ -73,7 +92,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  // 5. 서버 저장 로직 (Debounce)
+  // 6. 서버 저장 로직 (Debounce)
   const debouncedSettings = useDebounce({ muted, volume }, 1000);
 
   useEffect(() => {
@@ -87,10 +106,12 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     }
   }, [debouncedSettings, user]);
 
-  // 6. 핸들러 함수들
+  // 7. 핸들러 함수들
   const setIsMuted = (value: boolean) => {
     setMutedState(value);
     localStorage.setItem('sound_muted', String(value));
+    if (!value) play(); // 음소거 해제 시 즉시 재생 시도
+    else stop();        // 음소거 시 즉시 정지
   };
 
   const setVolume = (value: number) => {
@@ -103,8 +124,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     if (currentBGM !== path) {
       stop();
       setCurrentBGM(path);
+      // path 변경 후 play()는 위쪽 useEffect가 sound 로드를 감지하고 처리함
     }
-    play();
   };
 
   return (
