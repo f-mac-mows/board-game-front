@@ -53,6 +53,11 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     loop: true,
     soundEnabled: !isMuted,
     interrupt: true,
+    onload: () => {
+    if (user && !isMuted && sound && !sound.playing()) {
+      play();
+    }
+  }
   });
 
   // 3. [자동 동기화 및 재생] 유저 로그인 시 서버 설정 불러오기

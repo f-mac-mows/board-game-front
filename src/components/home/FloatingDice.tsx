@@ -109,7 +109,7 @@ function DiceMesh({ baseSpeed }: { baseSpeed: number }) {
   );
 }
 
-// --- 4. 메인 캔버스 ---
+// --- 4. 메인 캔버스 수정 ---
 export default function FloatingDice({ className = "" }: { className?: string }) {
   const speed = useMemo(() => 0.4 + Math.random() * 3, []);
 
@@ -117,9 +117,21 @@ export default function FloatingDice({ className = "" }: { className?: string })
     <div className={`w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-32 flex items-center justify-center cursor-pointer transition-transform ${className}`}>
       <Canvas 
         camera={{ position: [0, 0, 10], fov: 45 }} 
-        gl={{ alpha: true, antialias: true }}
-        // 모바일 성능을 위해 dpr(픽셀 밀도) 제한
-        dpr={[1, 2]}
+        gl={{ 
+          alpha: true, 
+          antialias: true,
+          // ✨ 추가: 저전력 모드 설정 (여러 개를 띄울 때 성능 안정성 확보)
+          powerPreference: "low-power",
+          // ✨ 추가: 컨텍스트 손실 방지를 위해 명시적으로 보존 옵션 추가 가능 (선택)
+          preserveDrawingBuffer: false,
+        }}
+        // ✨ 중요: 컴포넌트가 언마운트될 때 WebGL 리소스를 강제로 해제합니다.
+        onCreated={({ gl }) => {
+          gl.setClearColor(0x000000, 0);
+        }}
+        // @react-three/fiber는 기본적으로 언마운트 시 dispose를 수행하지만, 
+        // dpr 제한을 통해 모바일/저사양 기기에서 컨텍스트 해제를 방지합니다.
+        dpr={[1, 1.5]}
       >
         <ambientLight intensity={1.5} />
         <pointLight position={[10, 10, 10]} intensity={2} />
