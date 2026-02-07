@@ -46,7 +46,6 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
         });
 
         client.onConnect = (frame) => {
-            console.log("🌐 소켓 연결 성공:", frame.headers['user-name'] || "Connected");
             setIsConnected(true);
         };
 
@@ -63,8 +62,15 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
         client.activate();
         clientRef.current = client;
 
+        // ✨ Cleanup 함수 추가
         return () => {
+            if (clientRef.current) {
+                console.log("🧹 언마운트 시 소켓 정리");
+                clientRef.current.deactivate();
+                clientRef.current = null;
+            }
         };
+
     }, [shouldConnect]);
 
     const subscribe = (topic: string, callback: (payload: any) => void) => {
