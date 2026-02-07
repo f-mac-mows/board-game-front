@@ -14,6 +14,7 @@ import {
 } from "@/types/game";
 import Dice from "@/components/game/Dice";
 import { useWebSocket } from "@/contexts/WebSocketContext";
+import { useSoundManager } from "@/contexts/SoundContext";
 
 export default function YachtGamePage({ gameId }: { gameId: string}) {
     const { id } = useParams();
@@ -34,6 +35,18 @@ export default function YachtGamePage({ gameId }: { gameId: string}) {
     const [winnerData, setWinnerData] = useState<GameResult | null>(null);
     const [timer, setTimer] = useState(45);
     const [isRolling, setIsRolling] = useState(false);
+    const { playBGM, stopBGM, playDice } = useSoundManager();
+
+    // --- 1. 배경음악 자동 재생 및 종료 ---
+    useEffect(() => {
+        // 게임 페이지 진입 시 Yacht 전용 BGM 재생
+        // (주의: 유저가 이전에 사이트 내에서 클릭을 한 번이라도 했어야 소리가 납니다)
+        playBGM("YACHT");
+
+        return () => {
+            stopBGM(); // 페이지를 나갈 때 BGM 중지
+        };
+    }, []);
 
     // --- 초기 데이터 동기화 ---
     const syncGameStatus = useCallback(async () => {
@@ -80,6 +93,10 @@ export default function YachtGamePage({ gameId }: { gameId: string}) {
                 break;
 
             case 'DICE_ROLLED':
+                if (event.sender !== user?.nickname) {
+                    playDice();
+                }
+
                 setIsRolling(true);
                 // 1. 애니메이션 완료를 기다리는 함수
                 const waitAnimation = () => new Promise((resolve) => setTimeout(resolve, 600));
@@ -149,6 +166,7 @@ export default function YachtGamePage({ gameId }: { gameId: string}) {
         if (currentTurn !== user?.nickname || remainingRolls <= 0 || isRolling) return;
 
         try {
+            playDice(); // 🎲 굴리는 순간 소리 재생!
             await yachtApi.rollDice(numericGameId, keepIndices);
         } catch (err: any) {
             alert(err.response?.data?.message || "굴리기 실패");

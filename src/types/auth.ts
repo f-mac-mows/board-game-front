@@ -55,3 +55,8 @@ export interface UserProfileResponse {
     stats: StatInfo[];
     activeRoomId: number | null;
 }
+
+export interface UserSetting {
+    muted: boolean;
+    volume: number;
+}

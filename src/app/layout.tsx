@@ -5,6 +5,8 @@ import AuthProvider from "@/components/providers/authProvider";
 import QueryProvider from "@/components/providers/queryProvider";
 import { Toaster } from "react-hot-toast";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
+import { SoundProvider } from "@/contexts/SoundContext";
+import SoundToggle from "@/components/sound/SoundToggle";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://walrung.com'),
@@ -47,7 +49,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <QueryProvider>
           <AuthProvider>
             <WebSocketProvider>
-              <main className="flex-1 overflow-auto">{children}</main>
+              <SoundProvider>
+                {/* 🔊 전역 사운드 토글 버튼 (우측 상단 플로팅) */}
+                <div className="fixed top-4 right-4 z-9999">
+                  <SoundToggle />
+                </div>
+                <main className="flex-1 overflow-auto">{children}</main>
+              </SoundProvider>
             </WebSocketProvider>
           </AuthProvider>
         </QueryProvider>

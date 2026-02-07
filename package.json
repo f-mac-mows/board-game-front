@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build", 
+    "build": "next build",
     "start": "next start",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
@@ -34,6 +34,7 @@
     "sockjs-client": "^1.6.1",
     "tailwind-merge": "^3.4.0",
     "three": "^0.182.0",
+    "use-sound": "^5.0.0",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
