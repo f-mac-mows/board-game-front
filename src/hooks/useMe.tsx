@@ -1,20 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
-import { userApi } from '@/api/user';
-import { UserProfileResponse } from '@/types/auth';
+import { userApi } from "@/api/user";
+import { UserProfileResponse } from "@/types/auth";
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 
-export function useMe() {
-    const hasToken = typeof document !== 'undefined' && document.cookie.includes('accessToken');
+// hooks/useMe.ts
+export function useMe<TData = UserProfileResponse>(
+    options?: Omit<UseQueryOptions<UserProfileResponse, Error, TData>, 'queryKey' | 'queryFn'>
+) {
+    // 1. 브라우저 환경인지 확인
+    const isClient = typeof window !== 'undefined';
+    const hasToken = isClient && document.cookie.includes('accessToken');
 
-    return useQuery<UserProfileResponse>({
+    return useQuery<UserProfileResponse, Error, TData>({
         queryKey: ['user-profile'],
         queryFn: async () => {
             const { data } = await userApi.getMyInfo();
             return data;
         },
-        // 데이터가 "신선"하다고 간주되는 시간 (30초)
-        // 이 시간 동안은 페이지를 왔다갔다 해도 API를 재호출하지 않습니다.
-        staleTime: 1000 * 30, 
-        enabled: !!hasToken,
+        staleTime: 1000 * 60,
+        // ✨ 클라이언트이고 토큰이 있을 때만 실행하도록 강제
+        enabled: isClient && !!hasToken, 
         retry: false,
+        ...options,
     });
 }

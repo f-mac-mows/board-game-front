@@ -9,7 +9,7 @@ export default function TitleManagementPage() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center min-h-[400px]">
+            <div className="flex justify-center items-center min-h-100">
                 <Loader2 className="animate-spin text-emerald-500" size={40} />
             </div>
         );
@@ -32,7 +32,7 @@ export default function TitleManagementPage() {
                             key={title.code}
                             disabled={isEquipping || title.equipped}
                             onClick={() => equipTitle(title.code)}
-                            className={`relative p-6 rounded-[2rem] border-2 transition-all text-left group ${
+                            className={`relative p-6 rounded-4xl border-2 transition-all text-left group ${
                                 title.equipped 
                                 ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
                                 : 'bg-slate-900 border-slate-800 hover:border-slate-700'
@@ -67,14 +67,14 @@ export default function TitleManagementPage() {
                     ))
                 ) : (
                     /* 칭호가 하나도 없을 때 보여줄 빈 상태 */
-                    <div className="col-span-full py-20 text-center bg-slate-900/50 rounded-[2rem] border-2 border-dashed border-slate-800">
+                    <div className="col-span-full py-20 text-center bg-slate-900/50 rounded-4xl border-2 border-dashed border-slate-800">
                         <p className="text-slate-500 font-bold italic">획득한 칭호가 없습니다.</p>
                         <p className="text-xs text-slate-600 mt-1">업적을 달성하여 보상을 획득하세요!</p>
                     </div>
                 )}
 
                 {/* 2. 잠긴 칭호 예시 (선택 사항) */}
-                <div className="p-6 rounded-[2rem] border-2 border-slate-900 bg-slate-950/50 opacity-50 flex items-center gap-4">
+                <div className="p-6 rounded-4xl border-2 border-slate-900 bg-slate-950/50 opacity-50 flex items-center gap-4">
                     <div className="p-3 bg-slate-900 rounded-2xl">
                         <Lock size={20} className="text-slate-600" />
                     </div>

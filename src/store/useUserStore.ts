@@ -1,3 +1,4 @@
+import { AccountStat } from '@/types/auth';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -9,13 +10,15 @@ interface EssentialUser {
     createdAt: string;
     activeTitle: string | null;
     titleColor: string | null;
+    astat: AccountStat;
+    activeRoomId: number | null;
 }
 
 interface UserState {
     user: EssentialUser | null;
-    currentRoomId: number | null;
     setUser: (user: EssentialUser) => void;
     setCurrentRoomId: (roomId: number | null) => void;
+    updateActiveTitle: (titleName: string | null, colorCode: string | null) => void;
     clearUser: () => void;
 }
 
@@ -23,14 +26,23 @@ export const useUserStore = create<UserState>()(
     persist(
         (set) => ({
             user: null,
-            currentRoomId: null,
 
             setUser: (user) => set({ user }),
-            setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
-
+            setCurrentRoomId: (roomId) => set((state) => ({
+                user: state.user ? { ...state.user, activeRoomId: roomId } : null
+            })),
+            
+            updateActiveTitle: (titleName, colorCode) => set((state) => ({
+                user: state.user ? {
+                    ...state.user,
+                    activeTitle: titleName,
+                    titleColor: colorCode
+                } : null
+            })),
+            
             clearUser: () => {
-                set({ user: null, currentRoomId: null });
-                // 쿠키 및 로컬스토리지 정리 로직 (기존과 동일)
+                set({ user: null });
+
                 const deleteCookie = (name: string) => {
                     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
                 };

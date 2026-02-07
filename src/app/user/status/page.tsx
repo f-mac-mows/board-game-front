@@ -4,33 +4,37 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/useUserStore';
 import { useHistories } from '@/hooks/useHistories';
+import { useUserStats } from '@/hooks/useUserStats'; // ✨ 새로 만든 훅 임포트
 import { StatInfo } from '@/types/auth';
 import { GameTypeCode, GAME_TYPE_CONFIG } from '@/types/rooms';
 import { 
-    Search, Trophy, Medal, Award, Filter, 
-    Info, X, ChevronRight, Loader2, LayoutGrid 
+    Search, Trophy, Medal, Award, X, 
+    ChevronRight, Loader2, LayoutGrid 
 } from 'lucide-react';
 
 export default function UserStatusPage() {
     const router = useRouter();
-    const { user } = useUserStore();
+    const { user } = useUserStore(); // 닉네임 등 세션 정보
+    
+    // ✨ 서버에서 실시간 스탯(stats), 자산(asset) 정보를 가져옵니다.
+    const { data: serverData, isLoading: isStatsLoading } = useUserStats();
     const { histories, isLoading: isHistoryLoading } = useHistories();
     
     const [search, setSearch] = useState("");
     const [selectedStat, setSelectedStat] = useState<StatInfo | null>(null);
 
-    if (!user) return (
+    // 1. 세션이 없거나 데이터를 로딩 중일 때
+    if (!user || isStatsLoading) return (
         <div className="flex flex-col items-center justify-center p-20 text-slate-500">
             <Loader2 className="animate-spin mb-4" />
-            <p>사용자 정보를 불러오는 중입니다...</p>
+            <p>실시간 게임 데이터를 동기화 중입니다...</p>
         </div>
     );
 
-    // 1. 승률 계산 함수 (무승부 0.5승 처리)
+    // 2. 승률 계산 함수 (무승부 0.5승 처리)
     const calculateWinRate = (stat: StatInfo) => {
         const total = stat.wins + stat.losses + (stat.draws || 0);
         if (total === 0) return "0.0";
-        // (승리 + 무승부*0.5) / 전체판수
         const effectiveWins = stat.wins + ((stat.draws || 0) * 0.5);
         return ((effectiveWins / total) * 100).toFixed(1);
     };
@@ -42,13 +46,15 @@ export default function UserStatusPage() {
         return { icon: <Medal size={18} className="text-orange-600" />, label: "Bronze", color: "from-orange-600/10", border: "border-orange-600/20" };
     };
 
+    // 3. 필터링 로직 수정 (user.stats 대신 serverData.stats 사용)
     const filteredStats = useMemo(() => {
-        return user.stats.filter(s => {
+        if (!serverData?.stats) return [];
+        return serverData.stats.filter(s => {
             const searchLower = search.toLowerCase();
             const gameNameKR = GAME_TYPE_CONFIG[s.gameType as GameTypeCode]?.description || "";
             return s.gameType.toLowerCase().includes(searchLower) || gameNameKR.includes(searchLower);
         });
-    }, [user.stats, search]);
+    }, [serverData?.stats, search]);
 
     return (
         <div className="relative space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -57,7 +63,7 @@ export default function UserStatusPage() {
                 <div className="flex items-center gap-2 text-slate-500">
                     <LayoutGrid size={16} />
                     <span className="text-sm font-medium italic font-mono uppercase tracking-tighter">
-                        Total {user.stats.length} Game Stats
+                        Total {serverData?.stats?.length || 0} Game Stats
                     </span>
                 </div>
                 
@@ -121,7 +127,7 @@ export default function UserStatusPage() {
                     stat={selectedStat} 
                     nickname={user.nickname}
                     histories={histories}
-                    winRate={calculateWinRate(selectedStat)} // 계산된 값 전달
+                    winRate={calculateWinRate(selectedStat)}
                     onClose={() => setSelectedStat(null)} 
                 />
             )}
@@ -129,7 +135,7 @@ export default function UserStatusPage() {
     );
 }
 
-// --- 상세 모달 컴포넌트 ---
+// --- 상세 모달 컴포넌트 (동일) ---
 function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat: StatInfo, nickname: string, histories: any[], winRate: string, onClose: () => void }) {
     const router = useRouter();
     const currentExp = stat.exp % 1000;
@@ -163,7 +169,6 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
                 </div>
                 
                 <div className="p-8 space-y-8">
-                    {/* 경험치 바 섹션 */}
                     <div className="space-y-4 bg-slate-950/80 p-7 rounded-[2.5rem] border border-white/5">
                         <div className="flex justify-between items-end mb-2">
                             <div>
@@ -184,7 +189,6 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
                         </div>
                     </div>
 
-                    {/* 기록 요약 (무승부 포함 3칸 구성 추천) */}
                     <div className="grid grid-cols-3 gap-px bg-slate-800/50 rounded-3xl overflow-hidden border border-slate-800/50 text-center">
                         <div className="bg-slate-900 p-4">
                             <p className="text-[9px] text-slate-600 font-black uppercase mb-1">MMR</p>
@@ -200,7 +204,6 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
                         </div>
                     </div>
 
-                    {/* 최근 전적 3개 */}
                     <div>
                         <div className="flex justify-between items-center mb-4 px-1">
                             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Recent Match</h4>
@@ -212,10 +215,7 @@ function StatDetailModal({ stat, nickname, histories, winRate, onClose }: { stat
                             {recentMatches.length > 0 ? recentMatches.map((m) => {
                                 const style = getStyle(m.result);
                                 const formatMatchDate = (dateStr: string) => {
-                                    // 끝에 Z가 없다면 붙여서 UTC임을 명시
                                     const date = new Date(dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`);
-                                    
-                                    // 날짜와 시간을 같이 보여주면 더 정확합니다 (예: 2026. 2. 4. 17:05)
                                     return date.toLocaleString('ko-KR', {
                                         year: 'numeric',
                                         month: '2-digit',

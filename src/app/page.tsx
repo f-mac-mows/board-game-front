@@ -106,6 +106,7 @@ export default function HomePage() {
                 </div>
               </div>
 
+              {/* 유저 레벨 */}
               <div className="grid grid-cols-1 gap-3">
                 <div className="p-3 bg-slate-800/30 rounded-2xl border border-white/5 flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-500">LV</span>
