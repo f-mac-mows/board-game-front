@@ -7,6 +7,8 @@ interface EssentialUser {
     nickname: string;
     profileCompleted: boolean;
     createdAt: string;
+    activeTitle: string | null;
+    titleColor: string | null;
 }
 
 interface UserState {
