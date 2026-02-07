@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react'; // ✨ useEffect 추가
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/useUserStore';
 import { useHistories } from '@/hooks/useHistories';
-import { useUserStats } from '@/hooks/useUserStats'; // ✨ 새로 만든 훅 임포트
+import { useUserStats } from '@/hooks/useUserStats'; 
 import { StatInfo } from '@/types/auth';
 import { GameTypeCode, GAME_TYPE_CONFIG } from '@/types/rooms';
 import { 
@@ -14,30 +14,31 @@ import {
 
 export default function UserStatusPage() {
     const router = useRouter();
-    const { user } = useUserStore(); // 닉네임 등 세션 정보
+    const [mounted, setMounted] = useState(false); // ✨ 마운트 상태 추가
+    const { user } = useUserStore(); 
     
-    // ✨ 서버에서 실시간 스탯(stats), 자산(asset) 정보를 가져옵니다.
+    // 1. 모든 훅 호출을 최상단에 배치 (조건문보다 위)
     const { data: serverData, isLoading: isStatsLoading } = useUserStats();
     const { histories, isLoading: isHistoryLoading } = useHistories();
     
     const [search, setSearch] = useState("");
     const [selectedStat, setSelectedStat] = useState<StatInfo | null>(null);
 
-    // 1. 세션이 없거나 데이터를 로딩 중일 때
-    if (!user || isStatsLoading) return (
-        <div className="flex flex-col items-center justify-center p-20 text-slate-500">
-            <Loader2 className="animate-spin mb-4" />
-            <p>실시간 게임 데이터를 동기화 중입니다...</p>
-        </div>
-    );
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-    // 2. 승률 계산 함수 (무승부 0.5승 처리)
-    const calculateWinRate = (stat: StatInfo) => {
-        const total = stat.wins + stat.losses + (stat.draws || 0);
-        if (total === 0) return "0.0";
-        const effectiveWins = stat.wins + ((stat.draws || 0) * 0.5);
-        return ((effectiveWins / total) * 100).toFixed(1);
-    };
+    // 2. 필터링 로직 (데이터가 없을 때의 방어 로직을 포함)
+    const filteredStats = useMemo(() => {
+        const stats = serverData?.stats || []; // null 대비
+        if (stats.length === 0) return [];
+        
+        return stats.filter(s => {
+            const searchLower = search.toLowerCase();
+            const gameNameKR = GAME_TYPE_CONFIG[s.gameType as GameTypeCode]?.description || "";
+            return s.gameType.toLowerCase().includes(searchLower) || gameNameKR.includes(searchLower);
+        });
+    }, [serverData?.stats, search]);
 
     const getTierInfo = (mmr: number) => {
         if (mmr >= 2000) return { icon: <Trophy size={18} className="text-yellow-400" />, label: "Diamond", color: "from-yellow-500/10", border: "border-yellow-500/20" };
@@ -45,16 +46,35 @@ export default function UserStatusPage() {
         if (mmr >= 1200) return { icon: <Medal size={18} className="text-slate-400" />, label: "Gold", color: "from-slate-400/10", border: "border-slate-400/20" };
         return { icon: <Medal size={18} className="text-orange-600" />, label: "Bronze", color: "from-orange-600/10", border: "border-orange-600/20" };
     };
+    
+    // 3. 승률 계산 함수
+    const calculateWinRate = (stat: StatInfo) => {
+        const total = stat.wins + stat.losses + (stat.draws || 0);
+        if (total === 0) return "0.0";
+        const effectiveWins = stat.wins + ((stat.draws || 0) * 0.5);
+        return ((effectiveWins / total) * 100).toFixed(1);
+    };
 
-    // 3. 필터링 로직 수정 (user.stats 대신 serverData.stats 사용)
-    const filteredStats = useMemo(() => {
-        if (!serverData?.stats) return [];
-        return serverData.stats.filter(s => {
-            const searchLower = search.toLowerCase();
-            const gameNameKR = GAME_TYPE_CONFIG[s.gameType as GameTypeCode]?.description || "";
-            return s.gameType.toLowerCase().includes(searchLower) || gameNameKR.includes(searchLower);
-        });
-    }, [serverData?.stats, search]);
+    // 하이드레이션 오류 방지
+    if (!mounted) return <div className="min-h-screen bg-slate-950" />;
+
+    // 데이터 로딩 중이거나 유저 세션이 없을 때
+    if (!user || isStatsLoading) return (
+        <div className="flex flex-col items-center justify-center p-20 text-slate-500">
+            <Loader2 className="animate-spin mb-4" />
+            <p className="font-bold">실시간 게임 데이터를 동기화 중입니다...</p>
+        </div>
+    );
+
+    // 데이터가 비어있을 때 (검색 결과가 없는 게 아니라 아예 스탯이 없는 경우)
+    if (!isStatsLoading && (!serverData?.stats || serverData.stats.length === 0)) {
+        return (
+            <div className="flex flex-col items-center justify-center p-20 text-slate-500 border-2 border-dashed border-slate-800 rounded-4xl">
+                <LayoutGrid size={48} className="mb-4 opacity-20" />
+                <p>아직 기록된 게임 통계가 없습니다.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="relative space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
