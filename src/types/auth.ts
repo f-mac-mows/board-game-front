@@ -51,9 +51,12 @@ export interface UserProfileResponse {
     activeTitle: string | null;
     titleColor: string | null;
     astat: AccountStat;
+    activeRoomId: number | null;
+}
+
+export interface UserDataResponse {
     asset: AssetInfo;
     stats: StatInfo[];
-    activeRoomId: number | null;
 }
 
 export interface UserSetting {

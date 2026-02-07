@@ -1,17 +1,14 @@
 // hooks/useUserStats.tsx
-import { useMe } from './useMe';
-import { UserProfileResponse, StatInfo } from '@/types/auth';
+import { useQuery } from '@tanstack/react-query';
+import { userApi } from '@/api/user';
 
 export function useUserStats() {
-    return useMe({
-        select: (data: UserProfileResponse) => {
-            // 원본 데이터 구조가 { stats: [], asset: {} } 인지 확인
-            console.log("Select 내부:", data);
-            
-            const stats = data?.stats || [];
-            const asset = data?.asset || { gold: 0, point: 0 };
-            
-            return { stats, asset };
-        }
+    return useQuery({
+        queryKey: ['user-game-data'], // 키값도 데이터 성격에 맞게 변경
+        queryFn: async () => {
+            const { data } = await userApi.getMyData(); // 👈 새로 쪼갠 API 호출
+            return data;
+        },
+        staleTime: 1000 * 30,
     });
 }

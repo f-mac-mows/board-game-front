@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props) {
   
   const title = gameType === "user" ? "통합" : gameType;
   return {
-    title: `MOWS | ${title} ${criteria?.toUpperCase()} 랭킹`,
+    title: `왈렁 온라인 | ${title} ${criteria?.toUpperCase()} 랭킹`,
   };
 }
 

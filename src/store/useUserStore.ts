@@ -1,22 +1,10 @@
-import { AccountStat } from '@/types/auth';
+import { AccountStat, UserProfileResponse } from '@/types/auth';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// 변하지 않는 핵심 정보만 정의
-interface EssentialUser {
-    email: string;
-    nickname: string;
-    profileCompleted: boolean;
-    createdAt: string;
-    activeTitle: string | null;
-    titleColor: string | null;
-    astat: AccountStat;
-    activeRoomId: number | null;
-}
-
 interface UserState {
-    user: EssentialUser | null;
-    setUser: (user: EssentialUser) => void;
+    user: UserProfileResponse | null;
+    setUser: (user: UserProfileResponse) => void;
     setCurrentRoomId: (roomId: number | null) => void;
     updateActiveTitle: (titleName: string | null, colorCode: string | null) => void;
     clearUser: () => void;
@@ -39,7 +27,7 @@ export const useUserStore = create<UserState>()(
                     titleColor: colorCode
                 } : null
             })),
-            
+
             clearUser: () => {
                 set({ user: null });
 
@@ -48,11 +36,11 @@ export const useUserStore = create<UserState>()(
                 };
                 deleteCookie('accessToken');
                 deleteCookie('refreshToken');
-                localStorage.removeItem('mows-user-storage');
+                localStorage.removeItem('walrung-user-storage');
             },
         }),
         {
-            name: 'mows-user-storage',
+            name: 'walrung-user-storage',
             partialize: (state) => ({ user: state.user }),
         }
     )

@@ -3,6 +3,7 @@ import * as u from '@/types/auth'
 
 export const userApi = {
     getMyInfo: () => api.get<u.UserProfileResponse>("/user/me"),
+    getMyData: () => api.get<u.UserDataResponse>("/user/game-data"),
     updateNickname: (nickname: string) => 
         api.patch("/user/nickname", { nickname }),
     updateSettings: (settings: u.UserSetting) =>
