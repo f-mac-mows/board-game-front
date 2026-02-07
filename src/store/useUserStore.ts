@@ -11,16 +11,16 @@ interface UserState {
     clearUser: () => void;
 }
 
+// store/useUserStore.ts
 export const useUserStore = create<UserState>()(
     persist(
-        (set) => ({
+        (set, get) => ({ // get 추가
             user: null,
             currentRoomId: null,
 
-            // 로그인 시 유저 정보와 현재 참여 중인 방 ID를 동시에 업데이트
             setUser: (user) => set({ 
                 user, 
-                currentRoomId: user.activeRoomId // DTO의 값을 스토어에 반영
+                currentRoomId: user.activeRoomId 
             }),
 
             setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
@@ -34,10 +34,10 @@ export const useUserStore = create<UserState>()(
             })),
             
             clearUser: () => {
-                // Zustand 상태 초기화
+                // 1. 상태 즉시 초기화 (가장 먼저 수행하여 훅들의 enabled를 false로 만듦)
                 set({ user: null, currentRoomId: null });
 
-                // 쿠키 삭제
+                // 2. 쿠키 삭제 함수
                 const deleteCookie = (name: string) => {
                     const domains = ['.walrung.com', 'walrung.com', ''];
                     domains.forEach(domain => {
@@ -50,8 +50,13 @@ export const useUserStore = create<UserState>()(
                 deleteCookie('refreshToken');
                 deleteCookie('JSESSIONID');
                 
-                // 로컬 스토리지 강제 초기화
+                // 3. 스토리지 정리
                 localStorage.removeItem('mows-user-storage');
+                
+                // 4. (선택 사항) 세션 스토리지 등 기타 흔적 제거
+                sessionStorage.clear();
+
+                console.log("User store cleared.");
             },
         }),
         {
