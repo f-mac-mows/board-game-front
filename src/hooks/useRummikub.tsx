@@ -21,7 +21,20 @@ export function useRummikubActions(roomId: number) {
 
     // 1. 턴 제출 Mutation
     const submitMutation = useMutation({
-        mutationFn: (data: RummikubSubmitRequest) => rummikubApi.submit(roomId, data),
+        mutationFn: (data: RummikubSubmitRequest) => {
+            // 🚩 [NPE 방어] 데이터가 서버 규격에 맞는지 최종 확인
+            const sanitizedBoardTiles = data.boardTiles.map(tile => {
+                if (!tile.tileValue) {
+                    console.error("Missing tileValue for tile:", tile.tileId);
+                }
+                return tile;
+            });
+
+            return rummikubApi.submit(roomId, {
+                ...data,
+                boardTiles: sanitizedBoardTiles
+            });
+        },
         onSuccess: () => {
             toast.success('턴을 성공적으로 마쳤습니다!', { icon: '✅' });
             queryClient.invalidateQueries({ queryKey: ['rummikub-game', roomId] });

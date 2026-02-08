@@ -27,6 +27,7 @@ export interface RummikubSubmitRequest {
     nickname: string;
     boardTiles: {
         tileId: number;
+        tileValue: string;
         x: number;
         y: number;
         setId: number;

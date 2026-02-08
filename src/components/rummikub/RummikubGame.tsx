@@ -94,7 +94,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   const handleDragMove = (e: DragMoveEvent) => {
     if (!isMyTurn || !isConnected) return;
     const now = Date.now();
-    if (now - lastSendTime.current < 50) return;
+    if (now - lastSendTime.current < 90) return;
 
     const { active, delta } = e;
     const dragData = active.data.current;
@@ -143,11 +143,26 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
 
   const handleSubmit = () => {
     if (!isBoardValid) return;
-    const currentHand = useRummikubStore.getState().handTiles.map(({x, y, ...rest}) => rest);
+
+    const state = useRummikubStore.getState();
+    
+    const formattedHand = state.handTiles.map(h => ({
+      id: h.id,
+      number: h.number,
+      color: h.color,
+      tileValue: `${h.color}_${h.number}` 
+    }));
+
     submitTurn({
       nickname: myNickname,
-      boardTiles: boardTiles.map(t => ({ tileId: t.tileId, x: t.x, y: t.y, setId: t.setId })),
-      newHand: currentHand
+      boardTiles: state.boardTiles.map(t => ({
+        tileId: t.tileId,
+        tileValue: t.tileValue,
+        x: t.x,
+        y: t.y,
+        setId: t.setId
+      })),
+      newHand: formattedHand as any
     });
   };
 
@@ -172,13 +187,26 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
 
         <main className="flex-1 min-h-0">
           <RummikubBoardArea isMyTurn={isMyTurn}>
+            {/* 보드 타일 */}
             {boardTiles.map((tile) => (
-              <RummikubTile key={`tile-${tile.tileId}`} tile={tile} />
+              <RummikubTile 
+                key={`board-${tile.tileId}`} 
+                tile={tile} 
+                isError={!isBoardValid && useRummikubStore.getState().invalidTileIds.includes(tile.tileId)}
+              />
             ))}
+            
+            {/* 손패 타일 */}
             {handTiles.map((tile) => (
               <RummikubTile 
-                key={`tile-${tile.id}`} 
-                tile={{ tileId: tile.id, tileValue: `${tile.color}_${tile.number}`, x: tile.x, y: tile.y, setId: 0 }} 
+                key={`hand-${tile.id}`} 
+                tile={{ 
+                  tileId: tile.id, 
+                  tileValue: `${tile.color}_${tile.number}`, 
+                  x: tile.x, 
+                  y: tile.y, 
+                  setId: 0 
+                }} 
               />
             ))}
           </RummikubBoardArea>
