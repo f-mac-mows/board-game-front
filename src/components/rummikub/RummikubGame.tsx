@@ -55,8 +55,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   const syncGameStatus = useCallback(async () => {
     setIsSyncing(true);
     try {
-      // 훅이 아닌 직접 호출로 초기 상태 동기화 (rummikubApi.sync 호출부 생략, 서비스 로직과 동일)
-      const res = await fetch(`/api/game/rummikub/${numericRoomId}/sync`).then(r => r.json());
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/game/rummikub/${numericRoomId}/sync`).then(r => r.json());
       if (user?.nickname) setMyNickname(user.nickname);
       setCurrentTurn(res.currentTurn);
       setTilePoolCount(res.tilePoolCount);
@@ -119,7 +118,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
     if (dragData?.type === 'individual') {
       const tile = boardTiles.find(t => t.tileId === dragData.tileId);
       if (tile) {
-        sendMessage(`/app/game/rummikub/${numericRoomId}/drag`, {
+        sendMessage(`/topic/game/RUMMIKUB/${numericRoomId}/drag`, {
           type: 'TILE_DRAG',
           nickname: myNickname,
           tileId: tile.tileId,
