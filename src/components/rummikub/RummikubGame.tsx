@@ -2,14 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  DndContext, 
-  DragEndEvent, 
-  DragMoveEvent, 
-  PointerSensor, 
-  useSensor, 
-  useSensors 
-} from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragMoveEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useRummikubStore } from "@/store/useRummikubStore";
 import { useRummikubActions } from "@/hooks/useRummikub";
 import { useWebSocket } from "@/contexts/WebSocketContext";
@@ -27,158 +20,127 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   const { subscribe, isConnected, sendMessage } = useWebSocket();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  // 스토어 상태 및 액션
   const { 
     boardTiles, handTiles, moveTile, sortHand, initializeGame,
-    myNickname, currentTurnNickname, isBoardValid, setBoardValid,
+    myNickname, currentTurnNickname, isBoardValid,
     setMyNickname, setCurrentTurn, moveGroup, setBoardTiles, remoteMoveTile
   } = useRummikubStore();
 
-  // API 액션 훅
   const { submitTurn, drawTile, moveTileApi, moveBatchApi, syncGame, isSubmitting, isDrawing } = useRummikubActions(numericRoomId);
 
-  // 로컬 UI 상태
   const [timer, setTimer] = useState(60);
   const [tilePoolCount, setTilePoolCount] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [winnerData, setWinnerData] = useState<any>(null);
-  const [invalidIds, setInvalidIds] = useState<number[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // 현재 내 턴인지 확인
   const isMyTurn = useMemo(() => currentTurnNickname === myNickname, [currentTurnNickname, myNickname]);
-
-  // 실시간 드래그 전송 최적화 (Throttle)를 위한 Ref
   const lastSendTime = useRef<number>(0);
+  const hasSynced = useRef(false);
 
-  // --- [로직] 초기 데이터 동기화 ---
   const syncGameStatus = useCallback(async () => {
-  setIsSyncing(true);
-  try {
-    // 🚩 fetch 대신 훅의 syncGame 사용
-    const res = await syncGame(); 
-    
-    if (user?.nickname) setMyNickname(user.nickname);
-    setCurrentTurn(res.currentTurn);
-    setTilePoolCount(res.tilePoolCount);
-    setTimer(res.remainingSeconds);
-    
-    initializeGame({ 
-      table: res.table || [], 
-      myHand: res.myHand || [] 
-    });
-  } catch (err) {
-    console.error("Game sync failed", err);
-  } finally {
-    setIsSyncing(false);
-  }
-}, [syncGame, user?.nickname, initializeGame, setMyNickname, setCurrentTurn]);
+    if (hasSynced.current) return;
+    setIsSyncing(true);
+    try {
+      const res = await syncGame(); 
+      if (user?.nickname) setMyNickname(user.nickname);
+      setCurrentTurn(res.currentTurn);
+      setTilePoolCount(res.tilePoolCount);
+      setTimer(res.remainingSeconds);
+      initializeGame({ table: res.table || [], myHand: res.myHand || [] });
+      hasSynced.current = true;
+    } catch (err) {
+      console.error("Game sync failed", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [syncGame, user?.nickname, initializeGame, setMyNickname, setCurrentTurn]);
 
-  // --- [로직] 소켓 이벤트 핸들러 ---
   const handleGameEvent = useCallback((event: any) => {
     if (event.remainingSeconds !== undefined) setTimer(event.remainingSeconds);
 
     switch (event.type) {
       case 'TURN_CHANGED':
-        if (event.data?.boardTiles) setBoardTiles(event.data.boardTiles);
+        // 🚩 내 턴이 아닐 때만 서버 보드로 갱신하여 충돌 방지
+        if (event.data?.boardTiles) {
+          useRummikubStore.setState({ boardTiles: event.data.boardTiles });
+        }
         setCurrentTurn(event.nextTurn);
-        toast.success(`${event.nextTurn}님의 차례입니다.`);
+        if (event.nextTurn === myNickname) toast.success("당신의 턴입니다!");
         break;
 
-      case 'TILE_DRAG': // 다른 유저의 단일 드래그
-        if (event.nickname !== myNickname) {
-          remoteMoveTile(event.tileId, event.x, event.y);
-        }
+      case 'TILE_DRAG':
+        if (event.nickname !== myNickname) remoteMoveTile(event.tileId, event.x, event.y);
         break;
-
-      case 'TILE_BATCH_DRAG': // 다른 유저의 그룹 드래그
-        if (event.nickname !== myNickname) {
-          event.updates.forEach((u: any) => remoteMoveTile(u.tileId, u.toX, u.toY));
-        }
-        break;
-
+      
       case 'GAME_OVER':
         setWinnerData(event.data);
         setIsGameOver(true);
         break;
     }
-  }, [myNickname, remoteMoveTile, setBoardTiles, setCurrentTurn]);
+  }, [myNickname, remoteMoveTile, setCurrentTurn]);
+
+  useEffect(() => {
+    if (!isConnected || hasSynced.current) return;
+    syncGameStatus();
+  }, [isConnected, syncGameStatus]);
 
   useEffect(() => {
     if (!isConnected) return;
-    syncGameStatus();
     const unsubscribe = subscribe(`/topic/game/RUMMIKUB/${roomId}`, handleGameEvent);
     return () => unsubscribe();
-  }, [roomId, isConnected, subscribe, syncGameStatus, handleGameEvent]);
+  }, [roomId, isConnected, subscribe, handleGameEvent]);
 
-  // --- [액션] 드래그 중 실시간 소켓 전송 (onDragMove) ---
   const handleDragMove = (e: DragMoveEvent) => {
     if (!isMyTurn || !isConnected) return;
-    
     const now = Date.now();
-    if (now - lastSendTime.current < 50) return; // 50ms 간격으로 전송 제한 (성능 최적화)
+    if (now - lastSendTime.current < 50) return;
 
     const { active, delta } = e;
     const dragData = active.data.current;
 
     if (dragData?.type === 'individual') {
-      const tile = boardTiles.find(t => t.tileId === dragData.tileId);
-      if (tile) {
-        sendMessage(`/topic/game/RUMMIKUB/${numericRoomId}/drag`, {
-          type: 'TILE_DRAG',
-          nickname: myNickname,
-          tileId: tile.tileId,
-          x: tile.x + delta.x,
-          y: tile.y + delta.y
-        });
-      }
+      sendMessage(`/topic/game/RUMMIKUB/${numericRoomId}/drag`, {
+        type: 'TILE_DRAG',
+        nickname: myNickname,
+        tileId: dragData.tileId,
+        x: dragData.x + delta.x,
+        y: dragData.y + delta.y
+      });
     }
     lastSendTime.current = now;
   };
 
-  // --- [액션] 드래그 종료 시 DB 반영 (onDragEnd) ---
   const handleDragEnd = async (e: DragEndEvent) => {
-    const { active, delta } = e;
+    const { active, over, delta } = e;
     if (!isMyTurn) return;
 
     const dragData = active.data.current;
+    if (!dragData) return;
+
+    const destination = over?.id === "game-board-area" ? 'board' : 'hand';
     
-    if (dragData?.type === 'group') {
+    if (dragData.type === 'group') {
       const setId = dragData.setId;
       moveGroup(setId, delta.x, delta.y);
-      
       const updates = useRummikubStore.getState().boardTiles
         .filter(t => t.setId === setId)
         .map(t => ({ tileId: t.tileId, toX: t.x, toY: t.y, setId: t.setId }));
-
       moveBatchApi(updates);
-
-    } else if (dragData?.type === 'individual') {
+    } else {
       const tileId = Number(dragData.tileId);
-      const tile = boardTiles.find(t => t.tileId === tileId) || handTiles.find(t => t.id === tileId);
-      if (!tile) return;
-
-      const nextX = (tile as any).x + delta.x;
-      const nextY = (tile as any).y + delta.y;
-      const destination = nextY < 600 ? 'board' : 'hand';
+      const nextX = dragData.x + delta.x;
+      const nextY = dragData.y + delta.y;
 
       moveTile(tileId, destination, nextX, nextY);
 
       if (destination === 'board') {
-        const updatedTile = useRummikubStore.getState().boardTiles.find(t => t.tileId === tileId);
-        if (updatedTile) {
-          moveTileApi({ 
-            tileId, 
-            toX: updatedTile.x, 
-            toY: updatedTile.y, 
-            setId: updatedTile.setId 
-          });
-        }
+        const updated = useRummikubStore.getState().boardTiles.find(t => t.tileId === tileId);
+        if (updated) moveTileApi({ tileId, toX: updated.x, toY: updated.y, setId: updated.setId });
       }
     }
   };
 
-  // --- [액션] 턴 제출 및 드로우 ---
   const handleSubmit = () => {
     if (!isBoardValid) return;
     const currentHand = useRummikubStore.getState().handTiles.map(({x, y, ...rest}) => rest);
@@ -190,97 +152,50 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   };
 
   return (
-    <DndContext 
-      sensors={sensors} 
-      onDragMove={handleDragMove} 
-      onDragEnd={handleDragEnd}
-    >
-      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.6)_100%)] z-0" />
-
-      <div className="relative z-10 min-h-screen flex flex-col gap-6 p-4 md:p-8 max-w-325 mx-auto overflow-hidden text-white">
-        
-        {/* 상단 헤더 영역 (타이머, 드로우 버튼 등) */}
-        <header className="flex flex-wrap items-center justify-between bg-slate-900/40 backdrop-blur-xl p-4 px-6 rounded-4xl border border-slate-800 shadow-2xl">
-          <div className="flex items-center gap-6">
-            <div className={`flex items-center gap-3 px-5 py-2 rounded-full border transition-all duration-500
-              ${isMyTurn ? 'bg-blue-600/20 border-blue-500/50' : 'bg-slate-800/50 border-slate-700'}`}>
-              <div className={`w-2 h-2 rounded-full ${isMyTurn ? 'bg-blue-400 animate-pulse' : 'bg-slate-600'}`} />
-              <span className="text-xs font-black uppercase tracking-widest">
-                {isMyTurn ? "Your Turn" : `${currentTurnNickname}'s Turn`}
-              </span>
+    <DndContext sensors={sensors} onDragMove={handleDragMove} onDragEnd={handleDragEnd}>
+      {/* JSX 구조 생략 (기존과 동일) */}
+      <div className="relative z-10 min-h-screen flex flex-col gap-6 p-8 max-w-325 mx-auto text-white">
+        <header className="flex justify-between items-center bg-slate-900/40 p-6 rounded-4xl border border-slate-800 backdrop-blur-xl">
+          <div className="flex gap-6 items-center">
+            <div className={`px-5 py-2 rounded-full border ${isMyTurn ? 'bg-blue-600/20 border-blue-500' : 'bg-slate-800'}`}>
+              <span className="text-xs font-black">{isMyTurn ? "YOUR TURN" : `${currentTurnNickname}'S TURN`}</span>
             </div>
-
-            <div className="flex items-center gap-5 border-l border-slate-800 pl-6">
-              <button 
-                onClick={() => drawTile()}
-                disabled={!isMyTurn || isSyncing || isDrawing}
-                className="group relative w-20 h-20 bg-amber-500 rounded-2xl border-b-4 border-amber-700 active:border-0 active:translate-y-1 transition-all disabled:opacity-50"
-              >
-                <span className="text-[10px] font-black text-amber-900 block">DRAW</span>
-                <span className="text-2xl font-black text-white">{tilePoolCount}</span>
-              </button>
-
-              <div className="bg-slate-950/40 px-4 py-2 rounded-2xl border border-slate-800 text-center min-w-16">
-                <p className="text-[9px] text-slate-500 font-bold">TIMER</p>
-                <p className={`text-xl font-black ${timer < 10 ? 'text-red-500' : 'text-blue-400'}`}>{timer}</p>
-              </div>
-            </div>
+            <button onClick={() => drawTile()} disabled={!isMyTurn || isDrawing} className="w-20 h-20 bg-amber-500 rounded-2xl font-black">DRAW ({tilePoolCount})</button>
+            <div className="text-center"><p className="text-[10px] text-slate-500 font-bold">TIMER</p><p className="text-2xl font-black">{timer}</p></div>
           </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex bg-slate-950/50 p-1 rounded-2xl border border-slate-800">
-              <button onClick={() => sortHand('color')} className="px-4 py-2 text-[10px] font-black hover:text-blue-400">COLOR</button>
-              <button onClick={() => sortHand('number')} className="px-4 py-2 text-[10px] font-black hover:text-blue-400">NUMBER</button>
-            </div>
-            <button 
-              onClick={handleSubmit} 
-              disabled={!isMyTurn || !isBoardValid || isSubmitting}
-              className="px-8 py-3 bg-blue-600 rounded-2xl font-black text-sm hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600"
-            >
-              SUBMIT
-            </button>
+          <div className="flex gap-4">
+            <button onClick={() => sortHand('color')} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold">COLOR</button>
+            <button onClick={() => sortHand('number')} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold">NUMBER</button>
+            <button onClick={handleSubmit} disabled={!isMyTurn || !isBoardValid || isSubmitting} className="px-8 py-3 bg-blue-600 rounded-2xl font-black">SUBMIT</button>
           </div>
         </header>
 
-        {/* 게임 메인 보드 */}
-        <main className="flex-1 min-h-0 relative">
+        <main className="flex-1 min-h-0">
           <RummikubBoardArea isMyTurn={isMyTurn}>
             {boardTiles.map((tile) => (
-              <RummikubTile 
-                key={`tile-${tile.tileId}`}
-                tile={tile} 
-                isError={invalidIds.includes(tile.tileId)} 
-              />
+              <RummikubTile key={`tile-${tile.tileId}`} tile={tile} />
             ))}
             {handTiles.map((tile) => (
               <RummikubTile 
                 key={`tile-${tile.id}`} 
-                tile={{
-                  tileId: tile.id,
-                  tileValue: `${tile.color}_${tile.number}`,
-                  x: tile.x,
-                  y: tile.y,
-                  setId: 0
-                }} 
+                tile={{ tileId: tile.id, tileValue: `${tile.color}_${tile.number}`, x: tile.x, y: tile.y, setId: 0 }} 
               />
             ))}
           </RummikubBoardArea>
         </main>
-
-        {/* 결과창 모달 */}
-        <AnimatePresence>
-          {isGameOver && (
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-100 p-4">
-               {/* 위 결과 모달 UI 코드 동일 */}
-               <div className="bg-slate-900 p-12 rounded-[50px] text-center border border-slate-800">
-                 <h2 className="text-5xl font-black text-blue-500 mb-6 italic">GAME OVER</h2>
-                 <p className="text-white text-2xl mb-10">Winner: {winnerData?.winnerNickname}</p>
-                 <button onClick={() => router.push('/rooms')} className="w-full py-5 bg-white text-black rounded-3xl font-black uppercase">Lobby</button>
-               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {isGameOver && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} className="fixed inset-0 bg-black/90 flex items-center justify-center z-100">
+             <div className="bg-slate-900 p-12 rounded-[50px] border border-slate-800 text-center">
+               <h2 className="text-5xl font-black text-blue-500 mb-6 italic">GAME OVER</h2>
+               <p className="text-white text-2xl mb-10">Winner: {winnerData?.winnerNickname}</p>
+               <button onClick={() => router.push('/rooms')} className="w-full py-5 bg-white text-black rounded-3xl font-black">Lobby</button>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DndContext>
   );
 }

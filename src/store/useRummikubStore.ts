@@ -4,6 +4,7 @@ import { RummikubValidator } from '@/utils/rummikubValidator';
 import { RummikubSorter } from '@/utils/rummikubSorter';
 
 const TILE_WIDTH = 50;
+const TILE_HEIGHT = 70; // 타일 높이 정의
 const BOARD_WIDTH = 1200;
 const PADDING = 10;
 
@@ -24,10 +25,10 @@ interface RummikubState {
   setMyNickname: (nickname: string) => void;
   setCurrentTurn: (nickname: string) => void;
   setBoardValid: (isValid: boolean) => void;
-  setBoardTiles: (tiles: RummikubBoardTile[]) => void; // 🚩 추가: 서버 데이터 강제 동기화용
+  setBoardTiles: (tiles: RummikubBoardTile[]) => void;
   initializeGame: (data: { table: RummikubBoardTile[]; myHand: RummikubTile[] }) => void;
   moveTile: (tileId: number, to: 'board' | 'hand', x: number, y: number) => void;
-  remoteMoveTile: (tileId: number, x: number, y: number) => void; // 🚩 추가: 타 플레이어 드래그 실시간 반영
+  remoteMoveTile: (tileId: number, x: number, y: number) => void;
   sortHand: (type: 'color' | 'number') => void;
   validateCurrentBoard: () => void;
   moveGroup: (setId: number, deltaX: number, deltaY: number) => void;
@@ -46,40 +47,29 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
   setCurrentTurn: (nickname) => set({ currentTurnNickname: nickname }),
   setBoardValid: (isValid) => set({ isBoardValid: isValid }),
 
-  // 🚩 서버에서 내려준 보드 상태로 덮어쓰기 (주로 턴 변경 시 사용)
   setBoardTiles: (tiles) => {
+    const { myNickname, currentTurnNickname } = get();
+    if (myNickname === currentTurnNickname) return;
     set({ boardTiles: tiles });
     get().validateCurrentBoard();
   },
 
   initializeGame: ({ table, myHand }) => {
+    if (get().boardTiles.length > 0 || get().handTiles.length > 0) return;
     const positionedHand = RummikubSorter.sortByColor(myHand).map((t) => {
       const parsed = RummikubValidator.parseTileValue(t.tileValue);
-      return {
-        id: t.tileId,
-        color: parsed.color as TileColor,
-        number: parsed.number,
-        x: t.x,
-        y: t.y,
-      } as HandTile;
+      return { id: t.tileId, color: parsed.color as TileColor, number: parsed.number, x: t.x, y: t.y } as HandTile;
     });
-
-    set({ 
-      boardTiles: table, 
-      handTiles: positionedHand,
-      invalidTileIds: [] 
-    });
+    set({ boardTiles: table, handTiles: positionedHand, invalidTileIds: [] });
     get().validateCurrentBoard();
   },
 
-  // 🚩 타 플레이어의 드래그 위치 실시간 업데이트 (검증/자석 없이 위치만 반영)
   remoteMoveTile: (tileId, x, y) => set((state) => ({
-    boardTiles: state.boardTiles.map(t => 
-      t.tileId === tileId ? { ...t, x, y } : t
-    )
+    boardTiles: state.boardTiles.map(t => t.tileId === tileId ? { ...t, x, y } : t)
   })),
 
   moveTile: (tileId, to, x, y) => set((state) => {
+    // 1. 공통 경계 제한 (Board & Hand 영역 공통)
     let finalX = Math.max(PADDING, Math.min(x, BOARD_WIDTH - TILE_WIDTH - PADDING));
     let finalY = y;
 
@@ -89,103 +79,107 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
     if (!movingTile) return state;
 
     const isFromBoard = 'tileId' in movingTile;
-    
-    let nextBoard = state.boardTiles.filter(t => t.tileId !== tileId);
-    let nextHand = state.handTiles.filter(t => t.id !== tileId);
+    let nextBoard = [...state.boardTiles.filter(t => t.tileId !== tileId)];
+    let nextHand = [...state.handTiles.filter(t => t.id !== tileId)];
+
+    /**
+     * 🚩 범용 충돌 해결 함수 (Board/Hand 모두 사용 가능)
+     */
+    const resolveCollision = (targetX: number, targetY: number, tiles: any[], idKey: string): number => {
+      const gap = 5;
+      const overlapIdx = tiles.findIndex(t => 
+        t[idKey] !== tileId && // 자기 자신 제외
+        Math.abs(t.y - targetY) < 30 && 
+        targetX < t.x + TILE_WIDTH && 
+        targetX + TILE_WIDTH > t.x
+      );
+
+      if (overlapIdx !== -1) {
+        const overlappedTile = tiles[overlapIdx];
+        let nextPushX = overlappedTile.x + TILE_WIDTH + gap;
+
+        // 보드/손패 오른쪽 끝을 벗어나면 밀어내기 중단 (이전 위치 리턴)
+        if (nextPushX + TILE_WIDTH > BOARD_WIDTH - PADDING) {
+          return targetX - (TILE_WIDTH + gap);
+        }
+
+        tiles[overlapIdx] = { 
+          ...overlappedTile, 
+          x: resolveCollision(nextPushX, targetY, tiles, idKey) 
+        };
+      }
+      return targetX;
+    };
 
     if (to === 'board') {
-      nextBoard = nextBoard.map(t => {
-        if (Math.abs(t.y - finalY) < 20 && t.x >= finalX - 10 && t.x < finalX + TILE_WIDTH) {
-          return { ...t, x: t.x + TILE_WIDTH + 5 };
-        }
-        return t;
-      });
-
-      // 자석 병합 로직
+      // 보드 영역 자석 효과
       let targetSetId = Math.floor(Math.random() * 1000000);
       for (const target of nextBoard) {
         if (Math.abs(target.y - finalY) < 30 && Math.abs(target.x - finalX) < TILE_WIDTH + 20) {
           finalY = target.y;
-          finalX = target.x + (finalX > target.x ? TILE_WIDTH : -TILE_WIDTH);
+          const magnetX = target.x + (finalX > target.x ? TILE_WIDTH + 5 : -(TILE_WIDTH + 5));
+          finalX = Math.max(PADDING, Math.min(magnetX, BOARD_WIDTH - TILE_WIDTH - PADDING));
           targetSetId = target.setId;
           break;
         }
       }
 
+      // 보드 충돌 해결
+      finalX = resolveCollision(finalX, finalY, nextBoard, 'tileId');
+
       const updatedTile: RummikubBoardTile = {
-        tileId: isFromBoard ? movingTile.tileId : movingTile.id,
-        tileValue: 'tileValue' in movingTile ? movingTile.tileValue : `${movingTile.color}_${movingTile.number}`,
+        tileId: isFromBoard ? movingTile.tileId : (movingTile as any).id,
+        tileValue: 'tileValue' in movingTile ? movingTile.tileValue : `${(movingTile as any).color}_${(movingTile as any).number}`,
         x: finalX,
         y: finalY,
-        setId: targetSetId // 병합된 setId 적용
+        setId: targetSetId
       };
 
       setTimeout(() => get().validateCurrentBoard(), 0);
       return { boardTiles: [...nextBoard, updatedTile], handTiles: nextHand };
-    } else {
-      let color: TileColor;
-      let number: number;
 
-      if ('tileValue' in movingTile) {
-        const parsed = RummikubValidator.parseTileValue(movingTile.tileValue);
-        color = parsed.color as TileColor;
-        number = parsed.number;
-      } else {
-        color = movingTile.color;
-        number = movingTile.number;
-      }
+    } else {
+      // --- 🚩 손패 영역 로직 ---
+      const parsed = 'tileValue' in movingTile ? RummikubValidator.parseTileValue(movingTile.tileValue) : movingTile;
+      
+      // 손패에서도 밀어내기 적용
+      finalX = resolveCollision(finalX, finalY, nextHand, 'id');
 
       const newHandTile: HandTile = {
-        id: 'id' in movingTile ? movingTile.id : movingTile.tileId,
-        color,
-        number,
+        id: 'id' in movingTile ? (movingTile as any).id : (movingTile as any).tileId,
+        color: (parsed as any).color,
+        number: (parsed as any).number,
         x: finalX,
         y: finalY
       };
+
       return { boardTiles: nextBoard, handTiles: [...nextHand, newHandTile] };
     }
   }),
 
   sortHand: (type) => {
     const { handTiles } = get();
-    const rawTiles: RummikubTile[] = handTiles.map(({ x, y, ...rest }) => rest);
+    const rawTiles: RummikubTile[] = handTiles.map(({ x, y, ...rest }) => ({
+      ...rest,
+      tileId: rest.id,
+      tileValue: `${rest.color}_${rest.number}`
+    }));
     
-    const sortedWithCoords = type === 'color' 
-      ? RummikubSorter.sortByColor(rawTiles) 
-      : RummikubSorter.sortByNumber(rawTiles);
-
-    const finalHand: HandTile[] = sortedWithCoords.map((t) => {
-      const parsed = RummikubValidator.parseTileValue(t.tileValue);
-      return {
-        id: t.tileId,
-        color: parsed.color as TileColor,
-        number: parsed.number,
-        x: t.x,
-        y: t.y,
-      } as HandTile;
-    });
-
-    set({ handTiles: finalHand });
+    const sorted = type === 'color' ? RummikubSorter.sortByColor(rawTiles) : RummikubSorter.sortByNumber(rawTiles);
+    set({ handTiles: sorted.map(t => {
+      const p = RummikubValidator.parseTileValue(t.tileValue);
+      return { id: t.tileId, color: p.color as TileColor, number: p.number, x: t.x, y: t.y };
+    })});
   },
 
   validateCurrentBoard: () => {
     const { boardTiles } = get();
     const result = RummikubValidator.validateBoard(boardTiles);
-    set({ 
-      isBoardValid: result.isValid, 
-      invalidTileIds: result.invalidTileIds,
-      currentBoardScore: result.totalScore 
-    });
+    set({ isBoardValid: result.isValid, invalidTileIds: result.invalidTileIds, currentBoardScore: result.totalScore });
   },
 
   moveGroup: (setId, deltaX, deltaY) => set((state) => {
-    const updatedBoard = state.boardTiles.map(t => {
-      if (t.setId === setId) {
-        return { ...t, x: t.x + deltaX, y: t.y + deltaY };
-      }
-      return t;
-    });
-
+    const updatedBoard = state.boardTiles.map(t => t.setId === setId ? { ...t, x: t.x + deltaX, y: t.y + deltaY } : t);
     setTimeout(() => get().validateCurrentBoard(), 0);
     return { boardTiles: updatedBoard };
   }),
