@@ -6,6 +6,19 @@ import { RummikubSubmitRequest, TileMoveRequest } from '@/types/rummikub';
 export function useRummikubActions(roomId: number) {
     const queryClient = useQueryClient();
 
+    /**
+     * 동기화 함수 (API 호출부)
+     */
+    const syncGame = async () => {
+        try {
+            const response = await rummikubApi.sync(roomId);
+            return response.data; // Axios 응답 데이터 반환
+        } catch (error) {
+            console.error("Sync failed:", error);
+            throw error;
+        }
+    };
+
     // 1. 턴 제출 Mutation
     const submitMutation = useMutation({
         mutationFn: (data: RummikubSubmitRequest) => rummikubApi.submit(roomId, data),
@@ -64,6 +77,8 @@ export function useRummikubActions(roomId: number) {
         
         // 🚀 신규 이동 액션
         moveTileApi: moveMutation.mutate,
-        moveBatchApi: moveBatchMutation.mutate
+        moveBatchApi: moveBatchMutation.mutate,
+
+        syncGame
     };
 }

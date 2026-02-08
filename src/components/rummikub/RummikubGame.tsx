@@ -35,7 +35,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   } = useRummikubStore();
 
   // API 액션 훅
-  const { submitTurn, drawTile, moveTileApi, moveBatchApi, isSubmitting, isDrawing } = useRummikubActions(numericRoomId);
+  const { submitTurn, drawTile, moveTileApi, moveBatchApi, syncGame, isSubmitting, isDrawing } = useRummikubActions(numericRoomId);
 
   // 로컬 UI 상태
   const [timer, setTimer] = useState(60);
@@ -53,20 +53,26 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
 
   // --- [로직] 초기 데이터 동기화 ---
   const syncGameStatus = useCallback(async () => {
-    setIsSyncing(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/game/rummikub/${numericRoomId}/sync`).then(r => r.json());
-      if (user?.nickname) setMyNickname(user.nickname);
-      setCurrentTurn(res.currentTurn);
-      setTilePoolCount(res.tilePoolCount);
-      setTimer(res.remainingSeconds);
-      initializeGame({ table: res.table || [], myHand: res.myHand || [] });
-    } catch (err) {
-      console.error("Sync failed", err);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [numericRoomId, initializeGame, setMyNickname, setCurrentTurn, user?.nickname]);
+  setIsSyncing(true);
+  try {
+    // 🚩 fetch 대신 훅의 syncGame 사용
+    const res = await syncGame(); 
+    
+    if (user?.nickname) setMyNickname(user.nickname);
+    setCurrentTurn(res.currentTurn);
+    setTilePoolCount(res.tilePoolCount);
+    setTimer(res.remainingSeconds);
+    
+    initializeGame({ 
+      table: res.table || [], 
+      myHand: res.myHand || [] 
+    });
+  } catch (err) {
+    console.error("Game sync failed", err);
+  } finally {
+    setIsSyncing(false);
+  }
+}, [syncGame, user?.nickname, initializeGame, setMyNickname, setCurrentTurn]);
 
   // --- [로직] 소켓 이벤트 핸들러 ---
   const handleGameEvent = useCallback((event: any) => {
