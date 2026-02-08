@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { rummikubApi } from '@/api/rummikub';
 import { toast } from 'react-hot-toast';
-import { RummikubSubmitRequest } from '@/types/rummikub';
+import { RummikubSubmitRequest, TileMoveRequest } from '@/types/rummikub';
 
 export function useRummikubActions(roomId: number) {
     const queryClient = useQueryClient();
@@ -11,29 +11,17 @@ export function useRummikubActions(roomId: number) {
         mutationFn: (data: RummikubSubmitRequest) => rummikubApi.submit(roomId, data),
         onSuccess: () => {
             toast.success('턴을 성공적으로 마쳤습니다!', { icon: '✅' });
-            // 게임 상태 데이터 갱신
             queryClient.invalidateQueries({ queryKey: ['rummikub-game', roomId] });
         },
         onError: (error: any) => {
             const errorCode = error.response?.data?.code;
             const msg = error.response?.data?.message || "제출에 실패했습니다.";
 
-            // 에러 코드별 커스텀 토스트 처리
             switch (errorCode) {
-                case 'RUMMIKUB_3001': // INSUFFICIENT_SCORE
-                    toast.error(msg, { icon: '🔢' });
-                    break;
-                case 'RUMMIKUB_3002': // NO_MORE_TILES
-                    toast.error('더 이상 타일이 없습니다.', { icon: '⚠️' });
-                    break;
-                case 'RUMMIKUB_3003': // INVALID_COMBINATION
-                    toast.error('유효하지 않은 조합이 포함되어 있습니다.', { icon: '⚠️' });
-                    break;
-                case 'RUMMIKUB_3004': // BAD_REQUEST
-                    toast.error('타일 데이터 부정 조작이 감지되었습니다.', { icon: '⚠️' });
-                    break;
-                default:
-                    toast.error(msg);
+                case 'RUMMIKUB_3001': toast.error(msg, { icon: '🔢' }); break;
+                case 'RUMMIKUB_3003': toast.error('유효하지 않은 조합입니다.', { icon: '⚠️' }); break;
+                case 'RUMMIKUB_3004': toast.error('무결성 오류가 발생했습니다.', { icon: '🚨' }); break;
+                default: toast.error(msg);
             }
         }
     });
@@ -50,10 +38,32 @@ export function useRummikubActions(roomId: number) {
         }
     });
 
+    // 🚩 3. 단일 타일 이동 Mutation (실시간 DB 동기화)
+    const moveMutation = useMutation({
+        mutationFn: (data: TileMoveRequest) => rummikubApi.move(roomId, data),
+        onError: (error: any) => {
+            console.error("단일 이동 동기화 실패:", error);
+        }
+    });
+
+    // 🚩 4. 배치 타일 이동 Mutation (그룹 드래그 종료 시)
+    const moveBatchMutation = useMutation({
+        mutationFn: (updates: TileMoveRequest[]) => rummikubApi.moveBatch(roomId, updates),
+        onError: (error: any) => {
+            console.error("배치 이동 동기화 실패:", error);
+            toast.error("일부 타일 위치 저장에 실패했습니다.");
+        }
+    });
+
     return {
+        // 기존 액션
         submitTurn: submitMutation.mutate,
         isSubmitting: submitMutation.isPending,
         drawTile: drawMutation.mutate,
-        isDrawing: drawMutation.isPending
+        isDrawing: drawMutation.isPending,
+        
+        // 🚀 신규 이동 액션
+        moveTileApi: moveMutation.mutate,
+        moveBatchApi: moveBatchMutation.mutate
     };
 }

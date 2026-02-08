@@ -1,82 +1,89 @@
 "use client";
 
-import { BoardTile } from "@/store/useRummikubStore";
-import { useDraggable } from "@dnd-kit/core";
-import { motion } from "framer-motion";
+import { useDraggable, useDndContext } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { RummikubBoardTile, TileColor } from "@/types/rummikub";
 
 interface Props {
-  tile: BoardTile;
+  tile: RummikubBoardTile;
   isError?: boolean;
 }
 
 export default function RummikubTile({ tile, isError }: Props) {
+  const { active } = useDndContext();
+
+  // 1. 개별 드래그 (타일 본체용)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: tile.id.toString(),
+    id: `tile-${tile.tileId}`,
+    data: { type: 'individual', tileId: tile.tileId, setId: tile.setId }
   });
 
-  // dnd-kit 좌표 적용
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined;
+  // 2. 그룹 드래그 (핸들용)
+  const groupDraggable = useDraggable({
+    id: `group-${tile.setId}-${tile.tileId}`,
+    data: { type: 'group', setId: tile.setId }
+  });
 
-  // globals.css 테마 색상 활용
-  const colorMap: Record<string, string> = {
-    RED: "text-red-600",
-    BLUE: "text-blue-600",
-    YELLOW: "text-amber-500",
-    BLACK: "text-slate-900",
-    JOKER: "text-purple-600",
+  // 🚀 그룹 투명도 애니메이션 판별
+  // 현재 핸들을 잡고 드래그 중인 setId가 이 타일의 setId와 같은지 확인
+  const isGroupDragging = active?.data.current?.type === 'group' && active.data.current.setId === tile.setId;
+  
+  // 개별 드래그 중이거나 그룹원으로서 같이 움직이는 중이라면 활성화
+  const isActive = isDragging || isGroupDragging;
+
+  const style = {
+    // 그룹 이동 시에는 groupDraggable의 transform을, 개별 이동 시에는 본체의 transform을 사용
+    transform: CSS.Translate.toString(transform || groupDraggable.transform),
+    left: `${tile.x}px`,
+    top: `${tile.y}px`,
+    zIndex: isActive ? 1000 : 10,
   };
 
+  const colorMap: Record<TileColor, string> = {
+    RED: "text-red-500", BLUE: "text-blue-500", YELLOW: "text-amber-400",
+    BLACK: "text-slate-200", JOKER: "text-red-500"
+  };
+
+  const [color, number] = tile.tileValue.split("_");
+
   return (
-    <motion.div
+    <div
       ref={setNodeRef}
-      layout
-      layoutId={tile.id.toString()}
       style={style}
-      {...listeners}
-      {...attributes}
-      
-      /* 🚀 애니메이션: 에러 시 흔들림, 드래그 시 반응 */
-      initial={false}
-      animate={isError ? { x: [-2, 2, -2, 2, 0] } : { scale: 1 }}
-      whileHover={{ scale: 1.05, y: -2 }}
-      whileTap={{ scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-
-      className={`
-        relative w-11 h-15 sm:w-14 sm:h-20 rounded-lg flex flex-col items-center justify-center 
-        select-none cursor-grab active:cursor-grabbing transition-shadow
-        
-        /* 🚀 타일의 물리적 두께감 구현 */
-        ${isDragging 
-          ? "z-50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] rotate-2" 
-          : "shadow-[0_5px_0_0_#d1d5db,0_10px_15px_-3px_rgba(0,0,0,0.3)] bg-[#fdfcf8]"}
-        
-        /* 🚀 에러 상태 스타일 */
-        ${isError 
-          ? "border-2 border-red-500 bg-red-50 shadow-[0_5px_0_0_#fca5a5]" 
-          : "border border-slate-100"}
-      `}
+      className={`absolute touch-none select-none group transition-all duration-200
+        ${isActive ? "opacity-60 scale-105" : "opacity-100 scale-100"}`} // 👈 투명도 및 스케일 효과
     >
-      {/* 🚀 상단 광택 효과 (Glossy) */}
-      <div className="absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/80 to-transparent rounded-t-lg pointer-events-none" />
-      
-      {/* 🚀 타일 내부 음각 테두리 */}
-      <div className="absolute inset-1.5 border border-black/5 rounded-md pointer-events-none" />
-      
-      <span className={`text-3xl sm:text-4xl font-black tracking-tighter z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] ${colorMap[tile.color]}`}>
-        {tile.joker ? "☺" : tile.number}
-      </span>
-      
-      {tile.joker && (
-        <span className="absolute bottom-1.5 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] z-10">
-          Joker
-        </span>
-      )}
+      {/* 🟢 그룹 드래그 핸들 */}
+      <div 
+        ref={groupDraggable.setNodeRef}
+        {...groupDraggable.attributes}
+        {...groupDraggable.listeners}
+        className={`absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-4 rounded-t-md flex items-center justify-center cursor-grab active:cursor-grabbing shadow-lg border transition-colors
+          ${isActive ? "bg-blue-600 border-blue-400" : "bg-slate-800 border-slate-700 hover:bg-slate-700"}`}
+      >
+        <div className="flex gap-1">
+          <div className={`w-1 h-1 rounded-full ${isActive ? "bg-white animate-pulse" : "bg-slate-500"}`} />
+          <div className={`w-1 h-1 rounded-full ${isActive ? "bg-white animate-pulse" : "bg-slate-500"}`} />
+          <div className={`w-1 h-1 rounded-full ${isActive ? "bg-white animate-pulse" : "bg-slate-500"}`} />
+        </div>
+      </div>
 
-      {/* 🚀 하단 미세한 반사광 */}
-      <div className="absolute inset-x-0 bottom-0 h-0.5 bg-black/5 rounded-b-lg pointer-events-none" />
-    </motion.div>
+      {/* ⬜ 타일 본체 */}
+      <div
+        {...attributes}
+        {...listeners}
+        className={`
+          w-12 h-16 sm:w-14 sm:h-20 bg-white rounded-lg flex flex-col items-center justify-center 
+          shadow-[0_4px_0_#ccc,0_8px_15px_rgba(0,0,0,0.3)] border-2 transition-all
+          ${isError ? "border-red-500" : isActive ? "border-blue-400" : "border-slate-100"}
+          active:scale-95 cursor-grab
+        `}
+      >
+        <span className={`text-xl sm:text-2xl font-black ${colorMap[color as TileColor]}`}>
+          {color === "JOKER" ? "☺" : number}
+        </span>
+        <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 mt-1 ${colorMap[color as TileColor]} opacity-20`} />
+      </div>
+    </div>
   );
 }

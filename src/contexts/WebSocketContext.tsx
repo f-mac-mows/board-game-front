@@ -9,6 +9,7 @@ interface WebSocketContextType {
     isConnected: boolean;
     subscribe: (topic: string, callback: (payload: any) => void) => () => void;
     publish: (destination: string, body: any) => void;
+    sendMessage: (destination: string, body: any) => void; // 🚩 별칭 추가
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -89,8 +90,12 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
         }
     };
 
+    const sendMessage = (destination: string, body: any) => {
+        publish(destination, body);
+    };
+
     return (
-        <WebSocketContext.Provider value={{ isConnected, subscribe, publish }}>
+        <WebSocketContext.Provider value={{ isConnected, subscribe, publish, sendMessage }}>
             {children}
         </WebSocketContext.Provider>
     );

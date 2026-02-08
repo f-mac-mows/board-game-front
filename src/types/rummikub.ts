@@ -1,43 +1,89 @@
-// 타일 기본 타입
-export type TileColor = 'RED' | 'BLUE' | 'YELLOW' | 'BLACK' | 'JOKER';
+// 타일 색상 정의
+export type TileColor = 'JOKER'| 'RED' | 'BLUE' | 'YELLOW' | 'BLACK';
 
+// 기본 타일 정보 (손패 등에 사용)
 export interface RummikubTile {
     id: number;
-    number: number; // 조커는 보통 0 또는 특정 숫자로 처리 (백엔드와 일치 필요)
+    number: number; // 조커는 0
     color: TileColor;
-    joker: boolean;
 }
 
-// 플레이어 점수 및 상태
-export interface RummikubPlayerScore {
+/**
+ * 바닥에 놓인 타일 (좌표 및 세트 정보 포함)
+ * 백엔드의 RummikubBoardTile 엔티티와 1:1 매칭
+ */
+export interface RummikubBoardTile {
+    tileId: number;
+    tileValue: string; // "RED_10", "JOKER_0" 등 (파싱하여 이미지 렌더링에 사용)
+    x: number;
+    y: number;
+    setId: number;    // 같은 뭉치인지 판별 (검증 시 중요)
+}
+
+/**
+ * 턴 제출 요청 (POST /{roomId}/submit)
+ */
+export interface RummikubSubmitRequest {
     nickname: string;
-    score: number;        // 벌점 합계
-    winner: boolean;
-    remainingTiles?: RummikubTile[];
+    boardTiles: {
+        tileId: number;
+        x: number;
+        y: number;
+        setId: number;
+    }[];
+    newHand: RummikubTile[]; // 제출 후 남은 손패 리스트
 }
 
-// 루미큐브 이벤트 타입
-export type RummikubEventType = 'TILE_DRAWN' | 'TURN_SUBMITTED' | 'TURN_CHANGED' | 'GAME_OVER' | 'USER_DISCONNECTED';
+/**
+ * 복기용 로그 데이터 (GET /rummikub/{gameId}/replay)
+ */
+export interface RummikubGameLogResponse {
+    id: string;            // MongoDB ID
+    nickname: string;
+    action: 'TURN_SUBMIT' | 'DRAW_TILE' | 'GAME_START' | 'GAME_END' | 'INITIAL_MELD';
+    tileId?: number;       // DRAW_TILE 시 뽑은 타일
+    tileIds?: number[];    // TURN_SUBMIT 시 관여된 타일들
+    boardSnapshot: string; // JSON.parse() 하면 RummikubBoardTile[]가 됨
+    memo: string;
+    timestamp: string;
+}
 
-interface BaseRummikubEvent {
+export type RummikubEventType = 'TURN_CHANGED' | 'GAME_OVER' | 'USER_DISCONNECTED';
+
+export interface RummikubGameEvent {
     type: RummikubEventType;
-    sender: string;
+    sender: string;       // 액션을 취한 유저
+    roomId: number;
     remainingSeconds: number;
-    nextTurn?: string;
-}
-
-export interface RummikubGameEvent extends BaseRummikubEvent {
+    nextTurn: string;     // 다음 순서 유저
     data: {
-        tableSets?: RummikubTile[][];
+        // [중요] TURN_CHANGED 시 최신 바닥 상태를 내려주므로 프론트에서 자동 동기화 가능
+        boardTiles?: RummikubBoardTile[]; 
         winnerNickname?: string;
-        finalScores?: RummikubPlayerScore[];
+        finalScores?: RummikubPlayerResult[]; // 게임 종료 시에만 포함
         message?: string;
     };
 }
 
-// 제출 시 보낼 데이터
-export interface RummikubSubmitRequest {
+// 게임 종료 시 개별 플레이어의 결과
+export interface RummikubPlayerResult {
     nickname: string;
-    newTable: RummikubTile[][];
-    newHand: RummikubTile[];
+    score: number;               // 벌점 (조커 페널티 적용됨)
+    winner: boolean;
+    remainingTiles: RummikubTile[]; 
+}
+
+export interface RummikubDragEvent {
+    type: 'TILE_DRAG';
+    nickname: string;
+    tileId: number;
+    x: number;
+    y: number;
+}
+
+export interface TileMoveRequest {
+  tileId: number;
+  toX: number;
+  toY: number;
+  setId: number; // 👈 백엔드 updateTileLocation에 전달될 값
 }

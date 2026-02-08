@@ -1,37 +1,52 @@
-import { BoardTile } from "@/store/useRummikubStore";
+import { RummikubTile, RummikubBoardTile } from "@/types/rummikub";
+
+const TILE_WIDTH = 55;  // 타일 가로 폭 + 여백
+const TILE_HEIGHT = 75; // 타일 세로 폭 + 여백
+const HAND_START_X = 50;  // 손패 영역 시작 X
+const HAND_START_Y = 600; // 손패 영역 시작 Y (보드 하단)
 
 export const RummikubSorter = {
   /**
-   * 숫자 우선 정렬 (Group 중심: 1-1-1, 2-2-2...)
+   * 숫자 우선 정렬 (7-7-7-7...)
    */
-  sortByNumber(tiles: BoardTile[]): BoardTile[] {
+  sortByNumber(tiles: RummikubTile[]): RummikubBoardTile[] {
     const sorted = [...tiles].sort((a, b) => {
       if (a.number !== b.number) return a.number - b.number;
       return a.color.localeCompare(b.color);
     });
-    return this.assignCoordinates(sorted);
+    return this.assignPhysicalCoordinates(sorted);
   },
 
   /**
-   * 색상 우선 정렬 (Run 중심: 빨1-2-3, 파1-2-3...)
+   * 색상 우선 정렬 (빨 1-2-3-4...)
    */
-  sortByColor(tiles: BoardTile[]): BoardTile[] {
-    const colorOrder = { RED: 1, YELLOW: 2, BLUE: 3, BLACK: 4, JOKER: 5 };
+  sortByColor(tiles: RummikubTile[]): RummikubBoardTile[] {
+    const colorOrder: Record<string, number> = { RED: 1, YELLOW: 2, BLUE: 3, BLACK: 4, JOKER: 5 };
     const sorted = [...tiles].sort((a, b) => {
-      if (a.color !== b.color) return colorOrder[a.color] - colorOrder[b.color];
+      const colorA = colorOrder[a.color] || 99;
+      const colorB = colorOrder[b.color] || 99;
+      if (colorA !== colorB) return colorA - colorB;
       return a.number - b.number;
     });
-    return this.assignCoordinates(sorted);
+    return this.assignPhysicalCoordinates(sorted);
   },
 
   /**
-   * 정렬된 배열을 2단 손패 격자(20열)에 배치
+   * 정렬된 타일들에 실제 화면 좌표(px) 부여
    */
-  assignCoordinates(sortedTiles: BoardTile[]): BoardTile[] {
-    return sortedTiles.map((tile, index) => ({
-      ...tile,
-      x: Math.floor(index / 20), // 0번 줄 혹은 1번 줄
-      y: index % 20,             // 0~19번 칸
-    }));
+  assignPhysicalCoordinates(sortedTiles: RummikubTile[]): RummikubBoardTile[] {
+    return sortedTiles.map((tile, index) => {
+      const row = Math.floor(index / 18); // 한 줄에 18개씩 배치
+      const col = index % 18;
+
+      return {
+        tileId: tile.id,
+        tileValue: `${tile.color}_${tile.number}`,
+        // 실제 렌더링될 픽셀 좌표 계산
+        x: HAND_START_X + col * TILE_WIDTH,
+        y: HAND_START_Y + row * TILE_HEIGHT,
+        setId: 0 // 손패에서는 setId가 의미 없으므로 0
+      };
+    });
   }
 };
