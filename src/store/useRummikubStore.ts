@@ -139,21 +139,32 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
       return { boardTiles: [...nextBoard, updatedTile], handTiles: nextHand };
 
     } else {
-      // --- 🚩 손패 영역 로직 ---
-      const parsed = 'tileValue' in movingTile ? RummikubValidator.parseTileValue(movingTile.tileValue) : movingTile;
+      // --- 🚩 손패 영역 로직 (보강) ---
+      const parsed = 'tileValue' in movingTile 
+          ? RummikubValidator.parseTileValue(movingTile.tileValue) 
+          : movingTile;
       
-      // 손패에서도 밀어내기 적용
       finalX = resolveCollision(finalX, finalY, nextHand, 'id');
 
       const newHandTile: HandTile = {
-        id: 'id' in movingTile ? (movingTile as any).id : (movingTile as any).tileId,
-        color: (parsed as any).color,
-        number: (parsed as any).number,
-        x: finalX,
-        y: finalY
+          id: 'id' in movingTile ? (movingTile as any).id : (movingTile as any).tileId,
+          color: (parsed as any).color,
+          number: (parsed as any).number,
+          x: finalX,
+          y: finalY
       };
 
-      return { boardTiles: nextBoard, handTiles: [...nextHand, newHandTile] };
+      // ✨ 핵심 수정 1: 손패로 들어온 타일은 에러 목록에서 즉시 제거
+      const cleanedInvalidIds = state.invalidTileIds.filter(id => id !== tileId);
+
+      // ✨ 핵심 수정 2: 보드 검증 예약 (타일이 하나 빠졌으므로 남은 보드 타일들 상태 갱신)
+      setTimeout(() => get().validateCurrentBoard(), 0);
+
+      return { 
+          boardTiles: nextBoard, 
+          handTiles: [...nextHand, newHandTile],
+          invalidTileIds: cleanedInvalidIds // 에러 목록 갱신
+      };
     }
   }),
 
@@ -175,7 +186,18 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
   validateCurrentBoard: () => {
     const { boardTiles } = get();
     const result = RummikubValidator.validateBoard(boardTiles);
-    set({ isBoardValid: result.isValid, invalidTileIds: result.invalidTileIds, currentBoardScore: result.totalScore });
+    
+    // 🚀 실제 보드에 있는 타일 ID들만 추려냅니다.
+    const boardIds = new Set(boardTiles.map(t => t.tileId));
+    
+    // 검증 결과 중 실제 보드에 존재하는 ID만 에러로 인정합니다.
+    const actualInvalidIds = result.invalidTileIds.filter(id => boardIds.has(id));
+
+    set({ 
+        isBoardValid: actualInvalidIds.length === 0, 
+        invalidTileIds: actualInvalidIds, 
+        currentBoardScore: result.totalScore 
+    });
   },
 
   moveGroup: (setId, deltaX, deltaY) => set((state) => {

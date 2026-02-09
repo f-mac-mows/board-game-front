@@ -3,37 +3,68 @@
 import { useDraggable, useDndContext } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { RummikubBoardTile, TileColor } from "@/types/rummikub";
+import { memo } from "react";
 
 interface Props {
   tile: RummikubBoardTile;
   isError?: boolean;
 }
 
-export default function RummikubTile({ tile, isError }: Props) {
+const RummikubTile = ({ tile, isError }: Props) => {
   const { active } = useDndContext();
 
+  // 1. 개별 드래그 (타일 본체)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `tile-${tile.tileId}`,
-    data: { type: 'individual', tileId: tile.tileId, setId: tile.setId, x: tile.x, y: tile.y }
+    data: { 
+        type: 'individual', 
+        tileId: tile.tileId, 
+        setId: tile.setId, 
+        x: tile.x, 
+        y: tile.y 
+    }
   });
 
+  // 2. 그룹 드래그 (상단 핸들)
   const groupDraggable = useDraggable({
     id: `group-${tile.setId}-${tile.tileId}`,
-    data: { type: 'group', setId: tile.setId }
+    data: { 
+        type: 'group', 
+        setId: tile.setId 
+    }
   });
 
+  // 드래그 상태 확인
   const isGroupDragging = active?.data.current?.type === 'group' && active.data.current.setId === tile.setId;
   const isActive = isDragging || isGroupDragging;
 
-  // 🚀 최적화 스타일 객체
-  const style = {
-    transform: CSS.Translate.toString(transform || groupDraggable.transform),
+  /**
+   * 🚀 한 블록처럼 움직이게 하는 핵심 로직
+   * dnd-kit의 기본 transform은 각 컴포넌트마다 계산 시점이 미세하게 달라 딜레이가 발생할 수 있음.
+   * active 객체에서 마우스의 전체 이동량(Delta)을 직접 뽑아서 모든 타일에 동일하게 주입.
+   */
+  const getCombinedTransform = () => {
+    if (isDragging) return CSS.Translate.toString(transform);
+
+    if (isGroupDragging && active?.rect.current.translated && active?.rect.current.initial) {
+      const deltaX = active.rect.current.translated.left - active.rect.current.initial.left;
+      const deltaY = active.rect.current.translated.top - active.rect.current.initial.top;
+      return `translate3d(${deltaX}px, ${deltaY}px, 0)`;
+    }
+
+    return undefined;
+  };
+
+  const currentTransform = getCombinedTransform();
+
+  const style: React.CSSProperties = {
+    transform: currentTransform,
     left: `${tile.x}px`,
     top: `${tile.y}px`,
     zIndex: isActive ? 1000 : 10,
-    // 드래그 중에는 transition을 완전히 꺼야 마우스에 붙어다닙니다.
+    // 드래그 중일 때는 transition을 0으로 만들어 마우스 좌표를 즉각 반영 (자석 효과)
     transition: isActive ? "none" : "transform 200ms cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 200ms ease",
-    willChange: isActive ? "transform" : "auto",
+    willChange: "transform",
   };
 
   const colorMap: Record<TileColor, { text: string; bg: string; dot: string }> = {
@@ -53,7 +84,7 @@ export default function RummikubTile({ tile, isError }: Props) {
       style={style}
       className={`absolute touch-none select-none group ${isActive ? "z-50 scale-105" : "scale-100"}`}
     >
-      {/* 🟢 그룹 드래그 핸들 */}
+      {/* 🟢 그룹 드래그 핸들 (타일 상단 바) */}
       <div 
         ref={groupDraggable.setNodeRef}
         {...groupDraggable.attributes}
@@ -67,7 +98,7 @@ export default function RummikubTile({ tile, isError }: Props) {
         </div>
       </div>
 
-      {/* ⬜ 타일 본체 */}
+      {/* ⬜ 타일 본체 (개별 드래그) */}
       <div
         {...attributes}
         {...listeners}
@@ -79,7 +110,6 @@ export default function RummikubTile({ tile, isError }: Props) {
             : isActive 
               ? "border-blue-500 bg-white shadow-2xl" 
               : "border-[#D1D5DB] bg-[#F9FAFB] active:border-b-2 active:translate-y-1 shadow-lg"}
-          /* 본체 내부 상태 변화 애니메이션은 isActive가 아닐 때만 적용 */
           ${!isActive && "transition-all duration-200"}
         `}
       >
@@ -100,4 +130,7 @@ export default function RummikubTile({ tile, isError }: Props) {
       </div>
     </div>
   );
-}
+};
+
+// React.memo를 사용해 드래그 중이지 않은 타일들의 불필요한 리렌더링 방지
+export default memo(RummikubTile);

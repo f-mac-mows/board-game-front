@@ -168,7 +168,6 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
 
   return (
     <DndContext sensors={sensors} onDragMove={handleDragMove} onDragEnd={handleDragEnd}>
-      {/* JSX 구조 생략 (기존과 동일) */}
       <div className="relative z-10 min-h-screen flex flex-col gap-6 p-8 max-w-325 mx-auto text-white">
         <header className="flex justify-between items-center bg-slate-900/40 p-6 rounded-4xl border border-slate-800 backdrop-blur-xl">
           <div className="flex gap-6 items-center">
