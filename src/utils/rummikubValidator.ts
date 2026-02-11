@@ -11,7 +11,6 @@ export const RummikubValidator = {
     const visited = new Set<number>();
     const allChunks: RummikubBoardTile[][] = [];
 
-    // 1. 타일들을 복사하여 원본 배열 훼손 방지
     const sortedTiles = [...tiles];
 
     sortedTiles.forEach((startTile) => {
@@ -30,9 +29,9 @@ export const RummikubValidator = {
             const dx = Math.abs(curr.x - neighbor.x);
             const dy = Math.abs(curr.y - neighbor.y);
             
-            // 거리 조건 혹은 setId 조건 (둘 중 하나만 만족해도 연결)
+            // 🛠️ [수정] setId 비교 로직: "0"을 기본값으로 취급하고 문자열 비교 수행
             const isPhysicallyClose = dx < DISTANCE_THRESHOLD && dy < 25;
-            const isSameSet = curr.setId !== 0 && curr.setId === neighbor.setId;
+            const isSameSet = curr.setId !== "0" && curr.setId === neighbor.setId;
 
             if (isPhysicallyClose || isSameSet) {
               visited.add(neighbor.tileId);
@@ -44,7 +43,6 @@ export const RummikubValidator = {
       allChunks.push(currentChunk.sort((a, b) => a.x - b.x));
     });
 
-    // [중요] 혹시라도 누락된 타일이 없는지 검증하는 로직 (사라짐 방지)
     const processedCount = allChunks.reduce((acc, chunk) => acc + chunk.length, 0);
     if (processedCount !== tiles.length) {
       console.warn("일부 타일이 뭉치 계산에서 누락되었습니다.");
@@ -90,28 +88,47 @@ export const RummikubValidator = {
   isRun(normals: any[], jokerCount: number): boolean {
     const isSameColor = new Set(normals.map(t => t.color)).size === 1;
     if (!isSameColor) return false;
-    const sorted = [...normals].sort((a, b) => a.number - b.number);
+
+    if (normals.length === 0) return jokerCount >= 3;
+
+    const numbers = normals.map(t => t.number);
+    if (new Set(numbers).size !== normals.length) return false;
+
+    const sorted = [...numbers].sort((a, b) => a - b);
     let neededJokers = 0;
+    
     for (let i = 1; i < sorted.length; i++) {
-      const gap = sorted[i].number - sorted[i - 1].number - 1;
-      if (gap < 0) return false;
-      neededJokers += gap;
+      neededJokers += (sorted[i] - sorted[i - 1] - 1);
     }
-    return neededJokers <= jokerCount && (normals.length + jokerCount <= 13);
+
+    const totalLength = normals.length + jokerCount;
+    if (neededJokers <= jokerCount && totalLength <= 13) {
+      return (sorted[sorted.length - 1] - sorted[0] + 1) <= totalLength;
+    }
+
+    return false;
   },
 
   calculateChunkScore(chunk: RummikubBoardTile[]): number {
     const parsed = chunk.map(t => this.parseTileValue(t.tileValue));
-    const firstNormalIdx = parsed.findIndex(t => t.number !== 0);
-    if (firstNormalIdx === -1) return 0;
-    
-    // Group 판정
-    if (this.isGroup(parsed.filter(t => t.number !== 0), parsed.filter(t => t.number === 0).length)) {
-      return parsed[firstNormalIdx].number * chunk.length;
+    const normals = parsed.filter(t => t.number !== 0);
+    const jokerCount = chunk.length - normals.length;
+
+    if (normals.length === 0) return 0;
+
+    if (this.isGroup(normals, jokerCount)) {
+      return normals[0].number * chunk.length;
     }
-    // Run 판정
-    const startNum = parsed[firstNormalIdx].number - firstNormalIdx;
-    return (chunk.length * (2 * startNum + chunk.length - 1)) / 2;
+
+    if (this.isRun(normals, jokerCount)) {
+      const physicalParsed = chunk.map(t => this.parseTileValue(t.tileValue));
+      const firstNormalIdx = physicalParsed.findIndex(t => t.number !== 0);
+      const startNum = physicalParsed[firstNormalIdx].number - firstNormalIdx;
+      const endNum = startNum + chunk.length - 1;
+      return (chunk.length * (startNum + endNum)) / 2;
+    }
+
+    return 0;
   },
 
   parseTileValue(tileValue: string): { color: TileColor; number: number } {
@@ -119,8 +136,6 @@ export const RummikubValidator = {
       return { color: "JOKER", number: 0 };
     }
     const [colorStr, numStr] = tileValue.split("_");
-    
-    // colorStr을 TileColor 타입으로 강제 형변환하여 반환
     return { 
       color: colorStr as TileColor, 
       number: parseInt(numStr, 10) 

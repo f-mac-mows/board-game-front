@@ -1,228 +1,239 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { DndContext, DragEndEvent, DragMoveEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { throttle } from "lodash";
+import toast from "react-hot-toast";
+
 import { useRummikubStore } from "@/store/useRummikubStore";
 import { useRummikubActions } from "@/hooks/useRummikub";
 import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useUserStore } from "@/store/useUserStore";
-import { toast } from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
 
 import RummikubBoardArea from "./RummikubBoardArea";
 import RummikubTile from "./RummikubTile";
+import RummikubHeader from "./RummikubHeader";
+import RummikubGameOver from "./RummikubGameOver";
+import { RummikubSubmitRequest } from "@/types/rummikub";
+
+const ACTIVATION_CONSTRAINT = { distance: 5 };
 
 export default function RummikubGame({ roomId }: { roomId: string }) {
-  const router = useRouter();
-  const { user } = useUserStore();
   const numericRoomId = Number(roomId);
+  const { user } = useUserStore();
   const { subscribe, isConnected, sendMessage } = useWebSocket();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const { submitTurn, drawTile, moveTileApi, moveBatchApi, syncGame } = useRummikubActions(numericRoomId);
 
   const { 
-    boardTiles, handTiles, moveTile, sortHand, initializeGame,
-    myNickname, currentTurnNickname, isBoardValid,
-    setMyNickname, setCurrentTurn, moveGroup, setBoardTiles, remoteMoveTile
+    boardTiles, handTiles, moveTile, moveGroup, updateFromRemote, remoteMoveTile,
+    myNickname, currentTurnNickname, setMyNickname, isProcessing, setIsProcessing 
   } = useRummikubStore();
 
-  const { submitTurn, drawTile, moveTileApi, moveBatchApi, syncGame, isSubmitting, isDrawing } = useRummikubActions(numericRoomId);
-
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: ACTIVATION_CONSTRAINT }));
   const [timer, setTimer] = useState(60);
-  const [tilePoolCount, setTilePoolCount] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [winnerData, setWinnerData] = useState<any>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const isMyTurn = useMemo(() => currentTurnNickname === myNickname, [currentTurnNickname, myNickname]);
-  const lastSendTime = useRef<number>(0);
   const hasSynced = useRef(false);
 
-  const syncGameStatus = useCallback(async () => {
-    if (hasSynced.current) return;
-    setIsSyncing(true);
-    try {
-      const res = await syncGame(); 
-      if (user?.nickname) setMyNickname(user.nickname);
-      setCurrentTurn(res.currentTurn);
-      setTilePoolCount(res.tilePoolCount);
-      setTimer(res.remainingSeconds);
-      initializeGame({ table: res.table || [], myHand: res.myHand || [] });
-      hasSynced.current = true;
-    } catch (err) {
-      console.error("Game sync failed", err);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [syncGame, user?.nickname, initializeGame, setMyNickname, setCurrentTurn]);
+  const isMyTurn = myNickname === currentTurnNickname;
+  const canInteract = isMyTurn && !isProcessing && !isGameOver;
 
-  const handleGameEvent = useCallback((event: any) => {
-    if (event.remainingSeconds !== undefined) setTimer(event.remainingSeconds);
+  // 1. 실시간 드래그 전파 (백엔드 /app 접두사 반영)
+  const sendDragUpdate = useCallback(
+    throttle((data: any) => {
+      sendMessage(`/app/game/rummikub/${roomId}/move`, data);
+    }, 80), [roomId, sendMessage]
+  );
 
-    switch (event.type) {
-      case 'TURN_CHANGED':
-        // 🚩 내 턴이 아닐 때만 서버 보드로 갱신하여 충돌 방지
-        if (event.data?.boardTiles) {
-          useRummikubStore.setState({ boardTiles: event.data.boardTiles });
-        }
-        setCurrentTurn(event.nextTurn);
-        if (event.nextTurn === myNickname) toast.success("당신의 턴입니다!");
-        break;
+  const sendBatchDragUpdate = useCallback(
+    throttle((updates: any[]) => {
+      sendMessage(`/app/game/rummikub/${roomId}/move-batch`, { updates });
+    }, 80), [roomId, sendMessage]
+  );
 
-      case 'TILE_DRAG':
-        if (event.nickname !== myNickname) remoteMoveTile(event.tileId, event.x, event.y);
-        break;
-      
-      case 'GAME_OVER':
-        setWinnerData(event.data);
-        setIsGameOver(true);
-        break;
-    }
-  }, [myNickname, remoteMoveTile, setCurrentTurn]);
-
-  useEffect(() => {
-    if (!isConnected || hasSynced.current) return;
-    syncGameStatus();
-  }, [isConnected, syncGameStatus]);
-
-  useEffect(() => {
-    if (!isConnected) return;
-    const unsubscribe = subscribe(`/topic/game/RUMMIKUB/${roomId}`, handleGameEvent);
-    return () => unsubscribe();
-  }, [roomId, isConnected, subscribe, handleGameEvent]);
-
+  // 2. 드래그 중 실시간 핸들러
   const handleDragMove = (e: DragMoveEvent) => {
-    if (!isMyTurn || !isConnected) return;
-    const now = Date.now();
-    if (now - lastSendTime.current < 90) return;
-
+    if (!canInteract) return;
     const { active, delta } = e;
-    const dragData = active.data.current;
-
-    if (dragData?.type === 'individual') {
-      sendMessage(`/topic/game/RUMMIKUB/${numericRoomId}/drag`, {
-        type: 'TILE_DRAG',
-        nickname: myNickname,
-        tileId: dragData.tileId,
-        x: dragData.x + delta.x,
-        y: dragData.y + delta.y
-      });
-    }
-    lastSendTime.current = now;
-  };
-
-  const handleDragEnd = async (e: DragEndEvent) => {
-    const { active, over, delta } = e;
-    if (!isMyTurn) return;
-
     const dragData = active.data.current;
     if (!dragData) return;
 
-    const destination = over?.id === "game-board-area" ? 'board' : 'hand';
-    
-    if (dragData.type === 'group') {
-      const setId = dragData.setId;
-      moveGroup(setId, delta.x, delta.y);
-      const updates = useRummikubStore.getState().boardTiles
-        .filter(t => t.setId === setId)
-        .map(t => ({ tileId: t.tileId, toX: t.x, toY: t.y, setId: t.setId }));
-      moveBatchApi(updates);
+    const tileId = Number(active.id.toString().replace('tile-', ''));
+
+    if (dragData.type === 'group' && dragData.setId) {
+      const updates = boardTiles
+        .filter(t => t.setId === dragData.setId)
+        .map(t => ({
+          tileId: t.tileId,
+          toX: t.x + delta.x,
+          toY: t.y + delta.y,
+          setId: t.setId.startsWith('temp') ? 0 : Number(t.setId)
+        }));
+      sendBatchDragUpdate(updates);
     } else {
-      const tileId = Number(dragData.tileId);
-      const nextX = dragData.x + delta.x;
-      const nextY = dragData.y + delta.y;
+      sendDragUpdate({
+        tileId: tileId,
+        toX: dragData.x + delta.x,
+        toY: dragData.y + delta.y,
+        setId: String(dragData.setId).startsWith('temp') ? 0 : Number(dragData.setId || 0)
+      });
+    }
+  };
 
-      moveTile(tileId, destination, nextX, nextY);
+  // 3. 드래그 종료 핸들러 (최종 좌표 확정)
+  const handleDragEnd = async (e: DragEndEvent) => {
+    if (!canInteract) return;
+    const { active, over, delta } = e;
+    const dragData = active.data.current;
+    if (!over || !dragData) return;
 
-      if (destination === 'board') {
-        const updated = useRummikubStore.getState().boardTiles.find(t => t.tileId === tileId);
-        if (updated) moveTileApi({ tileId, toX: updated.x, toY: updated.y, setId: updated.setId });
+    const tileId = Number(active.id.toString().replace('tile-', ''));
+    const isBoardArea = over.id === "game-board-area";
+
+    if (dragData.type === 'group' && dragData.setId) {
+      moveGroup(dragData.setId, delta.x, delta.y);
+      setTimeout(() => {
+        const finalUpdates = useRummikubStore.getState().boardTiles
+          .filter(t => t.setId === dragData.setId)
+          .map(t => ({ tileId: t.tileId, toX: t.x, toY: t.y, setId: Number(t.setId) }));
+        if (finalUpdates.length > 0) moveBatchApi(finalUpdates);
+      }, 0);
+    } else {
+      moveTile(tileId, dragData.x + delta.x, dragData.y + delta.y);
+      if (isBoardArea) {
+        setTimeout(() => {
+          const finalTile = useRummikubStore.getState().boardTiles.find(t => t.tileId === tileId);
+          if (finalTile) {
+            moveTileApi({
+              tileId: finalTile.tileId,
+              toX: finalTile.x,
+              toY: finalTile.y,
+              setId: finalTile.setId.startsWith('temp') ? 0 : Number(finalTile.setId)
+            });
+          }
+        }, 0);
       }
     }
   };
 
-  const handleSubmit = () => {
-    if (!isBoardValid) return;
+  // 4. 소켓 이벤트 통합 핸들러
+  const handleGameEvent = useCallback((event: any) => {
+    if (event.remainingSeconds !== undefined) setTimer(event.remainingSeconds);
 
-    const state = useRummikubStore.getState();
+    switch (event.type) {
+      case 'REFRESH_SIGNAL':
+        if (event.data) {
+          updateFromRemote(event.data);
+          if (event.sender !== user?.nickname) {
+            toast(`${event.sender}님이 턴을 마쳤습니다.`, { icon: '🔔', id: 'remote-action' });
+          }
+        }
+        break;
+      case 'GAME_OVER':
+        if (event.data) setWinnerData(event.data);
+        setIsGameOver(true);
+        break;
+      default:
+        // 타 플레이어 드래그 이동 반영
+        if (event.nickname && event.nickname !== user?.nickname) {
+          if (event.tileId) {
+            remoteMoveTile(event.tileId, String(event.setId), event.x, event.y);
+          } else if (event.updates) {
+            event.updates.forEach((u: any) => remoteMoveTile(u.tileId, String(u.setId), u.toX, u.toY));
+          }
+        }
+    }
+  }, [updateFromRemote, remoteMoveTile, user?.nickname]);
+
+  // 5. 초기화 및 구독
+  useEffect(() => {
+    if (!isConnected) return;
+    if (!hasSynced.current) {
+      syncGame().then(() => { hasSynced.current = true; });
+    }
+    const unsubscribe = subscribe(`/topic/game/RUMMIKUB/${roomId}`, handleGameEvent);
+    return () => unsubscribe();
+  }, [roomId, isConnected, subscribe, handleGameEvent, syncGame]);
+
+  // 6. 턴 제출 핸들러 (그룹핑 로직 포함)
+  const handleSubmit = async () => {
+    if (isProcessing || !isMyTurn) return;
     
-    const formattedHand = state.handTiles.map(h => ({
-      id: h.id,
-      number: h.number,
-      color: h.color,
-      tileValue: `${h.color}_${h.number}` 
-    }));
+    const { boardTiles, handTiles } = useRummikubStore.getState();
+    const assignedTiles: any[] = [];
+    const visited = new Set<number>();
+    let currentSetId = 1;
 
-    submitTurn({
-      nickname: myNickname,
-      boardTiles: state.boardTiles.map(t => ({
-        tileId: t.tileId,
-        tileValue: t.tileValue,
-        x: t.x,
-        y: t.y,
-        setId: t.setId
-      })),
-      newHand: formattedHand as any
+    // 클라이언트 사이드 인접 타일 그룹핑 로직
+    boardTiles.forEach((startTile) => {
+      if (visited.has(startTile.tileId)) return;
+      const group: any[] = [];
+      const queue = [startTile];
+      visited.add(startTile.tileId);
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        group.push(current);
+        boardTiles.forEach((nextTile) => {
+          if (!visited.has(nextTile.tileId)) {
+            const isNearX = Math.abs(current.x - nextTile.x) < 70;
+            const isSameY = Math.abs(current.y - nextTile.y) < 30;
+            if (isNearX && isSameY) {
+              visited.add(nextTile.tileId);
+              queue.push(nextTile);
+            }
+          }
+        });
+      }
+      group.sort((a, b) => a.x - b.x).forEach(t => {
+        assignedTiles.push({ ...t, setId: currentSetId });
+      });
+      currentSetId++;
     });
+
+    try {
+      await submitTurn({
+        nickname: myNickname,
+        boardTiles: assignedTiles,
+        newHand: handTiles.map(t => ({ id: t.id, number: t.number, color: t.color })) as any
+      });
+    } catch (err) {
+      syncGame(); // 실패 시 서버 상태로 롤백
+    }
+  };
+
+  const handleDrawClick = async () => {
+    await drawTile();
   };
 
   return (
     <DndContext sensors={sensors} onDragMove={handleDragMove} onDragEnd={handleDragEnd}>
-      <div className="relative z-10 min-h-screen flex flex-col gap-6 p-8 max-w-325 mx-auto text-white">
-        <header className="flex justify-between items-center bg-slate-900/40 p-6 rounded-4xl border border-slate-800 backdrop-blur-xl">
-          <div className="flex gap-6 items-center">
-            <div className={`px-5 py-2 rounded-full border ${isMyTurn ? 'bg-blue-600/20 border-blue-500' : 'bg-slate-800'}`}>
-              <span className="text-xs font-black">{isMyTurn ? "YOUR TURN" : `${currentTurnNickname}'S TURN`}</span>
-            </div>
-            <button onClick={() => drawTile()} disabled={!isMyTurn || isDrawing} className="w-20 h-20 bg-amber-500 rounded-2xl font-black">DRAW ({tilePoolCount})</button>
-            <div className="text-center"><p className="text-[10px] text-slate-500 font-bold">TIMER</p><p className="text-2xl font-black">{timer}</p></div>
-          </div>
-          <div className="flex gap-4">
-            <button onClick={() => sortHand('color')} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold">COLOR</button>
-            <button onClick={() => sortHand('number')} className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold">NUMBER</button>
-            <button onClick={handleSubmit} disabled={!isMyTurn || !isBoardValid || isSubmitting} className="px-8 py-3 bg-blue-600 rounded-2xl font-black">SUBMIT</button>
-          </div>
-        </header>
-
-        <main className="flex-1 min-h-0">
-          <RummikubBoardArea isMyTurn={isMyTurn}>
-            {/* 보드 타일 */}
-            {boardTiles.map((tile) => (
-              <RummikubTile 
-                key={`board-${tile.tileId}`} 
-                tile={tile} 
-                isError={!isBoardValid && useRummikubStore.getState().invalidTileIds.includes(tile.tileId)}
-              />
-            ))}
-            
-            {/* 손패 타일 */}
+      <div className="relative z-10 min-h-screen flex flex-col gap-6 p-8 max-w-350 mx-auto text-white">
+        <RummikubHeader 
+          timer={timer} 
+          onDraw={handleDrawClick} 
+          onSubmit={handleSubmit}
+          isProcessing={isProcessing || !isMyTurn}
+          isBoardValid={true}
+        />
+        <main className="flex-1 min-h-150 border border-white/10 rounded-xl bg-black/20 backdrop-blur-sm overflow-hidden relative">
+          <RummikubBoardArea>
+            {boardTiles.map((tile) => <RummikubTile key={`board-${tile.tileId}`} tile={tile} disabled={!canInteract} />)}
             {handTiles.map((tile) => (
               <RummikubTile 
                 key={`hand-${tile.id}`} 
                 tile={{ 
                   tileId: tile.id, 
-                  tileValue: `${tile.color}_${tile.number}`, 
-                  x: tile.x, 
-                  y: tile.y, 
-                  setId: 0 
-                }} 
+                  tileValue: tile.color === 'JOKER' ? 'JOKER' : `${tile.color}_${tile.number}`, 
+                  x: tile.x, y: tile.y, setId: "0" 
+                }}
+                disabled={!canInteract}
               />
             ))}
           </RummikubBoardArea>
         </main>
       </div>
-
-      <AnimatePresence>
-        {isGameOver && (
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} className="fixed inset-0 bg-black/90 flex items-center justify-center z-100">
-             <div className="bg-slate-900 p-12 rounded-[50px] border border-slate-800 text-center">
-               <h2 className="text-5xl font-black text-blue-500 mb-6 italic">GAME OVER</h2>
-               <p className="text-white text-2xl mb-10">Winner: {winnerData?.winnerNickname}</p>
-               <button onClick={() => router.push('/rooms')} className="w-full py-5 bg-white text-black rounded-3xl font-black">Lobby</button>
-             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <RummikubGameOver isVisible={isGameOver} data={winnerData} />
     </DndContext>
   );
 }

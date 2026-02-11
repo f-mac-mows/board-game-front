@@ -1,61 +1,51 @@
 "use client";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation"; // Next.js App Router 방식
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { useWebSocket } from "@/contexts/WebSocketContext";
-import { useRummikubStore } from "@/store/useRummikubStore";
 import RummikubGame from "@/components/rummikub/RummikubGame";
-import { toast } from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 
-export default function RummikubPage({ gameId }: { gameId: string}) {
+interface RummikubPageProps {
+    gameId: string;
+}
+
+export default function RummikubPage({ gameId }: RummikubPageProps) {
     const params = useParams();
-    
-    const { subscribe, isConnected } = useWebSocket();
-    const { 
-        remoteMoveTile, 
-        setCurrentTurn, 
-        myNickname, 
-        setBoardTiles,
-        setBoardValid 
-    } = useRummikubStore();
+    const { isConnected } = useWebSocket();
+    // 로딩 상태 관리 (소켓 연결 및 초기 데이터 대기)
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (!isConnected || !gameId) return;
+        if (isConnected && gameId) {
+            setIsLoading(false);
+        }
+    }, [isConnected, gameId]);
 
-        // 페이지 레벨에서 공통 게임 이벤트 구독
-        const unsubscribe = subscribe(`/topic/game/RUMMIKUB/${gameId}`, (event: any) => {
-            
-            // 1. 타 플레이어 실시간 드래그 반영 (TILE_DRAG 또는 TILE_MOVE)
-            if ((event.type === 'TILE_DRAG' || event.action === 'TILE_MOVE') && event.nickname !== myNickname) {
-                remoteMoveTile(event.tileId, event.x || event.toX, event.y || event.toY);
-            }
-
-            // 2. 턴 전환 및 보드 상태 확정 동기화
-            if (event.type === 'TURN_CHANGED') {
-                setCurrentTurn(event.nextTurn);
-                
-                // 턴이 바뀌면 서버가 내려준 최종 보드 타일들로 강제 동기화 (자석/위치 오류 보정)
-                if (event.data?.boardTiles) {
-                    setBoardTiles(event.data.boardTiles);
-                }
-
-                if (event.nextTurn === myNickname) {
-                    toast.success("당신의 턴입니다!", { icon: '🎲' });
-                }
-            }
-
-            // 3. 게임 종료
-            if (event.type === 'GAME_OVER') {
-                toast("게임이 종료되었습니다.", { icon: '🏁' });
-            }
-        });
-
-        return () => unsubscribe();
-    }, [isConnected, gameId, myNickname, remoteMoveTile, setCurrentTurn, setBoardTiles]);
+    // 소켓 미연결 시 로딩 화면
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                <p className="text-slate-400 font-bold animate-pulse">
+                    Connecting to game server...
+                </p>
+            </div>
+        );
+    }
 
     return (
-        <main className="min-h-screen bg-slate-950 text-white overflow-hidden">
-            <RummikubGame roomId={gameId} />
+        <main className="relative min-h-screen bg-[#020617] text-white overflow-hidden font-sans">
+            {/* 배경 데코레이션: 게임 분위기를 살리는 은은한 그라데이션 */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-900/10 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-900/10 blur-[120px] rounded-full" />
+            </div>
+
+            {/* 실제 게임 컴포넌트: 내부에서 Topic/Queue 이원 구독을 수행함 */}
+            <div className="relative z-10">
+                <RummikubGame roomId={gameId} />
+            </div>
         </main>
     );
 }

@@ -137,7 +137,6 @@ export default function SignUpPage() {
                 password: formData.password,
                 nickname: formData.nickname,
             });
-            alert("회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
             router.push("/auth/login");
         } catch (err: any) {
             setMessage({ type: "error", text: err.response?.data?.message || "가입 실패" });

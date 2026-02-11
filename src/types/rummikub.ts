@@ -1,7 +1,6 @@
-// 타일 색상 정의
-export type TileColor = 'JOKER'| 'RED' | 'BLUE' | 'YELLOW' | 'BLACK';
+// 1. 기초 타일 정보
+export type TileColor = 'JOKER' | 'RED' | 'BLUE' | 'YELLOW' | 'BLACK';
 
-// 기본 타일 정보 (손패 등에 사용)
 export interface RummikubTile {
     id: number;
     number: number; // 조커는 0
@@ -9,30 +8,67 @@ export interface RummikubTile {
 }
 
 /**
- * 바닥에 놓인 타일 (좌표 및 세트 정보 포함)
- * 백엔드의 RummikubBoardTile 엔티티와 1:1 매칭
+ * [수정] 백엔드 응답 규격 (SyncData)
+ * submit, draw, sync API가 공통으로 반환하는 구조입니다.
  */
-export interface RummikubBoardTile {
+export interface RummikubSyncResponse {
+    table: RummikubBoardTile[];
+    players: RummikubPlayerInfo[];
+    currentTurn: string;
+    tilePoolCount: number;
+    remainingSeconds: number;
+    myHand?: RummikubTile[];    // 본인 손패
+    status?: 'IN_PROGRESS' | 'FINISHED';
+}
+
+// 3. 실시간 소켓 이벤트 (다이어트 버전)
+// 이제 소켓은 데이터를 실어 나르기보다 "사건 발생"을 알리는 용도입니다.
+export type RummikubSocketType = 
+    | 'REFRESH_SIGNAL' // 누군가 턴을 마침 -> 다같이 sync API 호출
+    | 'TILE_DRAG'      // 실시간 드래그 좌표
+    | 'BATCH_MOVE'     // 그룹 드래그 좌표
+    | 'GAME_OVER'      // 게임 종료 상세 결과
+    | 'USER_DISCONNECTED';
+
+export interface RummikubSocketEvent {
+    type: RummikubSocketType;
+    sender: string;
+    data?: any; // GAME_OVER 시에는 RummikubResultResponse가 담김
+}
+
+// 4. 게임 종료 상세 결과 (buildResultResponse 매칭)
+export interface RummikubPlayerScore {
+    nickname: string;
+    score: number; // 페널티 점수
+    remainingTiles: RummikubTile[];
+    winner: boolean;
+}
+
+export interface RummikubResultResponse {
+    winnerNickname: string;
+    gameId: number;
+    finalScores: RummikubPlayerScore[];
+}
+
+// 5. 드래그 및 이동 요청
+export interface TileMoveRequest {
     tileId: number;
-    tileValue: string; // "RED_10", "JOKER_0" 등 (파싱하여 이미지 렌더링에 사용)
-    x: number;
-    y: number;
-    setId: number;    // 같은 뭉치인지 판별 (검증 시 중요)
+    toX: number;
+    toY: number;
+    setId: number;
+}
+
+export interface RummikubBatchMoveRequest {
+    updates: TileMoveRequest[];
 }
 
 /**
- * 턴 제출 요청 (POST /{roomId}/submit)
+ * 플레이어 정보 요약
  */
-export interface RummikubSubmitRequest {
+export interface RummikubPlayerInfo {
     nickname: string;
-    boardTiles: {
-        tileId: number;
-        tileValue: string;
-        x: number;
-        y: number;
-        setId: number;
-    }[];
-    newHand: RummikubTile[]; // 제출 후 남은 손패 리스트
+    handCount: number;
+    isHasMelded: boolean;
 }
 
 /**
@@ -41,50 +77,41 @@ export interface RummikubSubmitRequest {
 export interface RummikubGameLogResponse {
     id: string;            // MongoDB ID
     nickname: string;
-    action: 'TURN_SUBMIT' | 'DRAW_TILE' | 'GAME_START' | 'GAME_END' | 'INITIAL_MELD';
+    action: 'TURN_SUBMIT' | 'DRAW_TILE' | 'GAME_START' | 'GAME_END' | 'INITIAL_MELD' | 'TIMEOUT';
     tileId?: number;       // DRAW_TILE 시 뽑은 타일
     tileIds?: number[];    // TURN_SUBMIT 시 관여된 타일들
-    boardSnapshot: string; // JSON.parse() 하면 RummikubBoardTile[]가 됨
+    boardSnapshot: string; // JSON.parse() 하면 RummikubBoardTile[]가 되는 데이터
     memo: string;
     timestamp: string;
 }
 
-export type RummikubEventType = 'TURN_CHANGED' | 'GAME_OVER' | 'USER_DISCONNECTED';
-
-export interface RummikubGameEvent {
-    type: RummikubEventType;
-    sender: string;       // 액션을 취한 유저
-    roomId: number;
-    remainingSeconds: number;
-    nextTurn: string;     // 다음 순서 유저
-    data: {
-        // [중요] TURN_CHANGED 시 최신 바닥 상태를 내려주므로 프론트에서 자동 동기화 가능
-        boardTiles?: RummikubBoardTile[]; 
-        winnerNickname?: string;
-        finalScores?: RummikubPlayerResult[]; // 게임 종료 시에만 포함
-        message?: string;
-    };
-}
-
-// 게임 종료 시 개별 플레이어의 결과
-export interface RummikubPlayerResult {
-    nickname: string;
-    score: number;               // 벌점 (조커 페널티 적용됨)
-    winner: boolean;
-    remainingTiles: RummikubTile[]; 
-}
-
-export interface RummikubDragEvent {
-    type: 'TILE_DRAG';
-    nickname: string;
+// 보드 위 타일 (UI 전용 setId: string)
+export interface RummikubBoardTile {
     tileId: number;
+    tileValue: string;
+    x: number;
+    y: number;
+    setId: string; // UI에서는 string
+}
+
+// 손패 타일
+export interface HandTile {
+    id: number;
+    number: number;
+    color: TileColor;
     x: number;
     y: number;
 }
 
-export interface TileMoveRequest {
-  tileId: number;
-  toX: number;
-  toY: number;
-  setId: number; // 👈 백엔드 updateTileLocation에 전달될 값
+// API 전송용 (Server 규격: setId: number)
+export interface RummikubSubmitRequest {
+    nickname: string;
+    boardTiles: {
+        tileId: number;
+        tileValue: string;
+        x: number;
+        y: number;
+        setId: number; // 서버는 number를 기대함
+    }[];
+    newHand: RummikubTile[];
 }

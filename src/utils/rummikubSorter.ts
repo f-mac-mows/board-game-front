@@ -40,12 +40,14 @@ export const RummikubSorter = {
       const col = index % 18;
 
       return {
-        tileId: tile.id,
-        tileValue: `${tile.color}_${tile.number}`,
+        // [수정] RummikubTile은 id를 가지고 있고, BoardTile은 tileId를 사용하므로 명확히 매핑
+        tileId: tile.id || (tile as any).id, 
+        tileValue: tile.color === 'JOKER' ? 'JOKER' : `${tile.color}_${tile.number}`,
         // 실제 렌더링될 픽셀 좌표 계산
         x: HAND_START_X + col * TILE_WIDTH,
         y: HAND_START_Y + row * TILE_HEIGHT,
-        setId: 0 // 손패에서는 setId가 의미 없으므로 0
+        // [수정] setId를 string 타입인 "0"으로 할당 (2322 에러 해결)
+        setId: "0" 
       };
     });
   }

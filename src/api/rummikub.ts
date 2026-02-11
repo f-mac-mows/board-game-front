@@ -4,32 +4,32 @@ import * as r from '@/types/rummikub';
 export const rummikubApi = {
     /**
      * 1. 턴 제출 (배치 완료 후)
+     * 응답으로 내 최신 손패와 바닥 상태를 즉시 받습니다.
      */
     submit: (roomId: number, data: r.RummikubSubmitRequest) =>
-        api.post(`/game/rummikub/${roomId}/submit`, data),
+        api.post<r.RummikubSyncResponse>(`/game/rummikub/${roomId}/submit`, data),
 
     /**
      * 2. 타일 한 장 뽑기 (턴 넘기기)
+     * 타일을 뽑은 후 갱신된 내 손패 데이터를 포함합니다.
      */
     draw: (roomId: number) =>
-        api.post(`/game/rummikub/${roomId}/draw`),
+        api.post<r.RummikubSyncResponse>(`/game/rummikub/${roomId}/draw`),
 
     /**
-     * 3. 게임 상태 동기화 (새로고침/입장 시)
+     * 3. 게임 상태 동기화 (새로고침/입장/소켓 신호 수신 시)
      */
     sync: (roomId: number) =>
-        api.get(`/game/rummikub/${roomId}/sync`),
+        api.get<r.RummikubSyncResponse>(`/game/rummikub/${roomId}/sync`),
 
     /**
-     * 4. 단일 타일 이동 기록 (개별 드래그 종료 시)
-     * setId를 포함하여 그룹 이탈/합체 정보를 서버 DB에 반영합니다.
+     * 4. 단일 타일 이동 기록 (휘발성/전파용)
      */
     move: (roomId: number, data: r.TileMoveRequest) =>
         api.post(`/game/rummikub/${roomId}/move`, data),
 
     /**
-     * 5. 배치 타일 이동 기록 (그룹 드래그 종료 시)
-     * 뭉치 전체의 좌표를 한 번의 요청으로 업데이트합니다.
+     * 5. 배치 타일 이동 기록 (그룹 이동)
      */
     moveBatch: (roomId: number, updates: r.TileMoveRequest[]) =>
         api.post(`/game/rummikub/${roomId}/move-batch`, { updates }),

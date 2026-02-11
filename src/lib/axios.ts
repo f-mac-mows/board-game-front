@@ -6,44 +6,60 @@ const api = axios.create({
     withCredentials: true,
 });
 
-// 요청 인터셉터
-api.interceptors.request.use((config) => {
-    return config;
-});
+// 토큰 갱신 중일 때 들어오는 요청들을 대기시키기 위한 큐
+let isRefreshing = false;
+let failedQueue: any[] = [];
 
-// 응답 인터셉터
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) prom.reject(error);
+        else prom.resolve(token);
+    });
+    failedQueue = [];
+};
+
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-        
-        // ✨ 핵심 가드: 현재 Zustand 스토어에 유저가 있는지 확인
-        const { user } = useUserStore.getState();
+        const { user, clearUser } = useUserStore.getState();
 
-        // 1. 리프레시 요청 자체의 에러이거나 이미 재시도 중이면 중단
-        if (originalRequest.url?.includes('/auth/refresh') || originalRequest._retry) {
-            return Promise.reject(error);
-        }
-
-        // 2. 401 에러가 발생했을 때
-        if (error.response?.status === 401) {
-            // ✨ 핵심 가드: 로그아웃 상태(user가 null)라면 리프레시를 시도하지 않고 즉시 거절
-            if (!user) {
-                return Promise.reject(error);
+        // 401 에러이고, 재시도한 적이 없을 때만 실행
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            
+            if (isRefreshing) {
+                // 이미 갱신 중이라면 큐에 담고 대기
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then(() => api(originalRequest))
+                  .catch((err) => Promise.reject(err));
             }
 
             originalRequest._retry = true;
+            isRefreshing = true;
 
             try {
-                // 재발급 시도
+                // 토큰 갱신 요청
                 await axios.post(`${api.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true });
+                
+                isRefreshing = false;
+                processQueue(null); // 대기 중인 요청들 진행
+                
                 return api(originalRequest);
             } catch (refreshError) {
-                // 리프레시 실패 시 (예: 리프레시 토큰 만료)
-                // 필요하다면 여기서 clearUser()를 강제로 호출하여 완전 로그아웃 처리 가능
+                isRefreshing = false;
+                processQueue(refreshError);
+                clearUser?.();
+                // 게임 중이라면 방 밖으로 튕겨나가는 등의 처리가 필요할 수 있음
                 return Promise.reject(refreshError);
             }
         }
+
+        /**
+         * 🚩 게임 전용 에러 로깅 보완
+         * RummikubErrorCode (3001, 3002 등)가 넘어올 때 
+         * 인터셉터에서 공통으로 처리하기보다 catch 문으로 넘겨주는 게 좋습니다.
+         */
         return Promise.reject(error);
     }
 );

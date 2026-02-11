@@ -1,97 +1,73 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { rummikubApi } from '@/api/rummikub';
 import { toast } from 'react-hot-toast';
 import { RummikubSubmitRequest, TileMoveRequest } from '@/types/rummikub';
+import { useRummikubStore } from '@/store/useRummikubStore';
+import { useCallback } from 'react';
 
 export function useRummikubActions(roomId: number) {
-    const queryClient = useQueryClient();
+    const { updateFromRemote, setIsProcessing } = useRummikubStore();
 
-    /**
-     * 동기화 함수 (API 호출부)
-     */
-    const syncGame = async () => {
-        try {
-            const response = await rummikubApi.sync(roomId);
-            return response.data; // Axios 응답 데이터 반환
-        } catch (error) {
-            console.error("Sync failed:", error);
-            throw error;
+    const handleSuccessSync = useCallback((res: any) => {
+        if (res?.data) {
+            updateFromRemote(res.data);
+            return res.data;
         }
-    };
+    }, [updateFromRemote]);
 
-    // 1. 턴 제출 Mutation
     const submitMutation = useMutation({
-        mutationFn: (data: RummikubSubmitRequest) => {
-            // 🚩 [NPE 방어] 데이터가 서버 규격에 맞는지 최종 확인
-            const sanitizedBoardTiles = data.boardTiles.map(tile => {
-                if (!tile.tileValue) {
-                    console.error("Missing tileValue for tile:", tile.tileId);
-                }
-                return tile;
-            });
+        mutationFn: async (data: RummikubSubmitRequest) => {
+            setIsProcessing(true);
+            // 서버 전송 전 setId를 숫자로 정제
+            const sanitizedBoardTiles = data.boardTiles.map(tile => ({
+                ...tile,
+                setId: String(tile.setId).startsWith('temp') ? 0 : Number(tile.setId)
+            }));
 
-            return rummikubApi.submit(roomId, {
-                ...data,
-                boardTiles: sanitizedBoardTiles
+            return rummikubApi.submit(roomId, { 
+                ...data, 
+                boardTiles: sanitizedBoardTiles as any 
             });
         },
-        onSuccess: () => {
-            toast.success('턴을 성공적으로 마쳤습니다!', { icon: '✅' });
-            queryClient.invalidateQueries({ queryKey: ['rummikub-game', roomId] });
+        onSuccess: (res) => {
+            handleSuccessSync(res);
+            toast.success('턴을 마쳤습니다!', { id: 'game-action' });
         },
         onError: (error: any) => {
-            const errorCode = error.response?.data?.code;
-            const msg = error.response?.data?.message || "제출에 실패했습니다.";
-
-            switch (errorCode) {
-                case 'RUMMIKUB_3001': toast.error(msg, { icon: '🔢' }); break;
-                case 'RUMMIKUB_3003': toast.error('유효하지 않은 조합입니다.', { icon: '⚠️' }); break;
-                case 'RUMMIKUB_3004': toast.error('무결성 오류가 발생했습니다.', { icon: '🚨' }); break;
-                default: toast.error(msg);
-            }
-        }
+            const msg = error.response?.data?.message || "유효하지 않은 조합입니다.";
+            toast.error(msg, { id: 'game-action' });
+            throw error; // 컴포넌트에서 catch 할 수 있게 throw
+        },
+        onSettled: () => setIsProcessing(false)
     });
 
-    // 2. 타일 드로우 Mutation
     const drawMutation = useMutation({
         mutationFn: () => rummikubApi.draw(roomId),
-        onSuccess: () => {
-            toast('타일을 한 장 가져왔습니다.', { icon: '🃏' });
-            queryClient.invalidateQueries({ queryKey: ['rummikub-game', roomId] });
+        onSuccess: (res) => {
+            handleSuccessSync(res);
+            toast.success('타일을 가져왔습니다.', { icon: '🃏', id: 'game-action' });
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "타일을 가져올 수 없습니다.");
-        }
+            const msg = error.response?.data?.message || "드로우 실패";
+            toast.error(msg, { id: 'game-action' });
+        },
+        onSettled: () => setIsProcessing(false)
     });
 
-    // 🚩 3. 단일 타일 이동 Mutation (실시간 DB 동기화)
-    const moveMutation = useMutation({
-        mutationFn: (data: TileMoveRequest) => rummikubApi.move(roomId, data),
-        onError: (error: any) => {
-            console.error("단일 이동 동기화 실패:", error);
+    const syncGame = useCallback(async () => {
+        try {
+            const res = await rummikubApi.sync(roomId);
+            return handleSuccessSync(res);
+        } catch (error) {
+            console.error("Sync failed:", error);
         }
-    });
-
-    // 🚩 4. 배치 타일 이동 Mutation (그룹 드래그 종료 시)
-    const moveBatchMutation = useMutation({
-        mutationFn: (updates: TileMoveRequest[]) => rummikubApi.moveBatch(roomId, updates),
-        onError: (error: any) => {
-            console.error("배치 이동 동기화 실패:", error);
-            toast.error("일부 타일 위치 저장에 실패했습니다.");
-        }
-    });
+    }, [roomId, handleSuccessSync]);
 
     return {
-        // 기존 액션
-        submitTurn: submitMutation.mutate,
-        isSubmitting: submitMutation.isPending,
-        drawTile: drawMutation.mutate,
-        isDrawing: drawMutation.isPending,
-        
-        // 🚀 신규 이동 액션
-        moveTileApi: moveMutation.mutate,
-        moveBatchApi: moveBatchMutation.mutate,
-
+        submitTurn: submitMutation.mutateAsync, 
+        drawTile: drawMutation.mutateAsync,
+        moveTileApi: (data: TileMoveRequest) => rummikubApi.move(roomId, data),
+        moveBatchApi: (updates: TileMoveRequest[]) => rummikubApi.moveBatch(roomId, updates),
         syncGame
     };
 }
