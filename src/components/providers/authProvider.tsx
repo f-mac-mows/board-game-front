@@ -33,7 +33,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     initAuth();
   }, [setUser, clearUser]);
 
-  // 2. 리다이렉트 로직 (기존 useEffect 유지)
+  // 2. 리다이렉트 로직
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -52,13 +52,18 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // 참여 중인 방 이탈 방지 가드
+      // [참여 중인 방/게임 이탈 방지 가드]
       if (user.activeRoomId) {
-        const isGamePage = pathname.startsWith("/game/yacht");
+        // 🚩 수정 포인트 1: Yacht뿐만 아니라 모든 게임 페이지를 인식하도록 변경
+        const isGamePage = pathname.startsWith("/game/"); 
+        
         const roomMatch = pathname.match(/\/rooms\/(\d+)/);
         const targetRoomId = roomMatch ? Number(roomMatch[1]) : null;
 
+        // /rooms 목록으로 가려고 하거나, 현재 참여 중인 방과 다른 상세 페이지로 가려 할 때 리다이렉트
         if (pathname === "/rooms" || (targetRoomId && targetRoomId !== user.activeRoomId)) {
+          // 🚩 수정 포인트 2: 현재 게임 중이 아닐 때만 대기실로 리다이렉트
+          // (게임 중일 때는 이미 게임 페이지에 있으므로 가두지 않아도 됨)
           if (!isGamePage) {
             router.replace(`/rooms/${user.activeRoomId}`);
           }

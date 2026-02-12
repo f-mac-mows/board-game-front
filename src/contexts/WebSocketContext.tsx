@@ -73,15 +73,13 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
         };
     }, [shouldConnect]);
 
-    /**
-     * 🚩 최적화된 Subscribe
-     * 의존성 배열을 비움([])으로써 컴포넌트 생명주기 동안 단 한 번만 생성됩니다.
-     * 내부에서는 Ref를 통해 최신 소켓 상태를 안전하게 참조합니다.
-     */
+    // WebSocketProvider.tsx 수정
     const subscribe = useCallback((topic: string, callback: (payload: any) => void) => {
+        // 🚩 핵심: 연결되지 않았을 때 호출되면, 나중에 연결되었을 때 다시 실행되도록 유도해야 함
+        // 하지만 가장 단순하고 확실한 방법은 호출부(컴포넌트)에서 isConnected일 때만 subscribe하게 만드는 것입니다.
+        
         if (!clientRef.current || !isConnectedRef.current) {
-            console.warn("⚠️ 소켓이 아직 연결되지 않아 구독을 유보합니다:", topic);
-            return () => {};
+            return () => {}; // 연결 전에는 아무것도 안 함
         }
 
         const subscription = clientRef.current.subscribe(topic, (message) => {
@@ -89,17 +87,14 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
                 const data = JSON.parse(message.body);
                 callback(data);
             } catch (e) {
-                console.error("❌ 소켓 메시지 파싱 에러:", e);
+                console.error("❌ 파싱 에러:", e);
             }
         });
 
         return () => {
-            // 이 로그가 찍힌다면 실제로 해당 컴포넌트가 언마운트되었거나, 
-            // 의도적으로 구독을 해제한 경우입니다.
-            console.log(`🚫 구독 해제 완료: ${topic}`);
             subscription.unsubscribe();
         };
-    }, []); // 의존성 없음 -> 절대 변하지 않는 함수 참조 보장
+    }, []);
 
     const publish = useCallback((destination: string, body: any) => {
         if (clientRef.current?.connected) {

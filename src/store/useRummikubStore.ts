@@ -27,6 +27,7 @@ interface RummikubState {
   currentBoardScore: number;
   tilePoolCount: number;
   isProcessing: boolean;
+  remainingSeconds: number;
   originalBoardIds: Set<number>;
 
   setMyNickname: (nickname: string) => void;
@@ -48,6 +49,7 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
   isBoardValid: true,
   invalidTileIds: [],
   currentBoardScore: 0,
+  remainingSeconds: 60,
   tilePoolCount: 106,
   isProcessing: false,
 
@@ -65,28 +67,75 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
     if (!data) return;
 
     set((state) => {
-      // 🚩 이번 턴 서버의 보드 상태(원본) ID들을 저장
-      const serverBoardIds = new Set(data.table.map(t => t.tileId));
+      const serverBoardIds = new Set(data.table?.map(t => t.tileId) || []);
+      const remoteHand = data.myHand || [];
       
-      const nextHand = data.myHand ? data.myHand.map((t, idx) => ({
-        id: t.id,
-        number: t.number,
-        color: t.color,
-        x: PADDING + (idx * 60) % (BOARD_WIDTH - 100),
-        y: RACK_Y_START + (Math.floor((idx * 60) / (BOARD_WIDTH - 100)) * 90)
-      })) : state.handTiles;
+      // 1. 기존 타일들의 좌표를 Map으로 보관 (ID 유지용)
+      const currentHandCoords = new Map(state.handTiles.map(t => [t.id, { x: t.x, y: t.y }]));
+      
+      // 2. 최종 결과가 담길 배열 (충돌 검사용으로도 사용됨)
+      const nextHand: HandTile[] = [];
+
+      // 겹침 확인 및 위치 수정 함수 (resolveCollision 응용)
+      const findEmptySpot = (startX: number, startY: number, tiles: HandTile[]): { x: number, y: number } => {
+        let targetX = startX;
+        let targetY = startY;
+        const gap = 5;
+
+        // 현재 배치된 타일들 중 겹치는게 있는지 확인
+        while (tiles.some(t => 
+          Math.abs(t.y - targetY) < 40 && 
+          targetX < t.x + TILE_WIDTH && 
+          targetX + TILE_WIDTH > t.x
+        )) {
+          // 겹치면 오른쪽으로 밀기
+          targetX += TILE_WIDTH + gap;
+
+          // 화면 오른쪽 끝을 벗어나면 다음 줄로 내리기
+          if (targetX + TILE_WIDTH > BOARD_WIDTH - PADDING) {
+            targetX = PADDING;
+            targetY += TILE_HEIGHT + 10;
+          }
+        }
+        return { x: targetX, y: targetY };
+      };
+
+      // 3. 순회하며 좌표 결정
+      remoteHand.forEach((t, idx) => {
+        const existingPos = currentHandCoords.get(t.id);
+
+        if (existingPos) {
+          // ✅ 기존 타일은 그 자리 그대로 유지
+          nextHand.push({
+            ...t,
+            x: existingPos.x,
+            y: existingPos.y
+          });
+        } else {
+          // ✅ 새 타일: 기본 위치를 잡고 빈 공간을 찾아 배치
+          // 기본 위치는 랙의 첫 번째 줄(idx 기반)로 설정하되 findEmptySpot이 보정함
+          const defaultX = PADDING + (idx * 60) % (BOARD_WIDTH - 100);
+          const defaultY = RACK_Y_START;
+          
+          const safePos = findEmptySpot(defaultX, defaultY, nextHand);
+          
+          nextHand.push({
+            ...t,
+            x: safePos.x,
+            y: safePos.y
+          });
+        }
+      });
 
       return {
-        boardTiles: data.table.map(t => ({
-          ...t,
-          setId: String(t.setId) 
-        })),
+        boardTiles: (data.table || []).map(t => ({ ...t, setId: String(t.setId) })),
         handTiles: nextHand,
-        originalBoardIds: serverBoardIds, // 🚩 신규 타일 판별 기준
+        originalBoardIds: serverBoardIds,
         currentTurnNickname: data.currentTurn,
         tilePoolCount: data.tilePoolCount,
-        isProcessing: false,
-        isBoardValid: true // 프론트 검증은 항상 Pass
+        remainingSeconds: data.remainingSeconds ?? state.remainingSeconds,
+        isBoardValid: true,
+        isProcessing: false
       };
     });
   },

@@ -16,14 +16,11 @@ export function useRummikubActions(roomId: number) {
     }, [updateFromRemote]);
 
     const submitMutation = useMutation({
-        mutationFn: async (data: RummikubSubmitRequest) => {
-            setIsProcessing(true);
-            // 서버 전송 전 setId를 숫자로 정제
+        mutationFn: (data: RummikubSubmitRequest) => {
             const sanitizedBoardTiles = data.boardTiles.map(tile => ({
                 ...tile,
                 setId: String(tile.setId).startsWith('temp') ? 0 : Number(tile.setId)
             }));
-
             return rummikubApi.submit(roomId, { 
                 ...data, 
                 boardTiles: sanitizedBoardTiles as any 
@@ -36,9 +33,8 @@ export function useRummikubActions(roomId: number) {
         onError: (error: any) => {
             const msg = error.response?.data?.message || "유효하지 않은 조합입니다.";
             toast.error(msg, { id: 'game-action' });
-            throw error; // 컴포넌트에서 catch 할 수 있게 throw
-        },
-        onSettled: () => setIsProcessing(false)
+        }
+        // 🚩 여기서 setIsProcessing을 지웁니다. 호출부에서 직접 제어하는 게 훨씬 안전합니다.
     });
 
     const drawMutation = useMutation({
@@ -50,9 +46,28 @@ export function useRummikubActions(roomId: number) {
         onError: (error: any) => {
             const msg = error.response?.data?.message || "드로우 실패";
             toast.error(msg, { id: 'game-action' });
-        },
-        onSettled: () => setIsProcessing(false)
+        }
     });
+
+    // 🚩 래핑 함수를 통해 처리 상태를 확실히 제어
+    const submitTurn = async (data: RummikubSubmitRequest) => {
+        try {
+            setIsProcessing(true); // 직접 시작
+            await submitMutation.mutateAsync(data);
+        } finally {
+            // 🚩 어떤 에러가 나더라도, 심지어 updateFromRemote에서 에러가 나더라도 무조건 해제
+            setIsProcessing(false); 
+        }
+    };
+
+    const drawTile = async () => {
+        try {
+            setIsProcessing(true);
+            await drawMutation.mutateAsync();
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const syncGame = useCallback(async () => {
         try {
@@ -64,8 +79,8 @@ export function useRummikubActions(roomId: number) {
     }, [roomId, handleSuccessSync]);
 
     return {
-        submitTurn: submitMutation.mutateAsync, 
-        drawTile: drawMutation.mutateAsync,
+        submitTurn, 
+        drawTile,
         moveTileApi: (data: TileMoveRequest) => rummikubApi.move(roomId, data),
         moveBatchApi: (updates: TileMoveRequest[]) => rummikubApi.moveBatch(roomId, updates),
         syncGame
