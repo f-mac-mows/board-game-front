@@ -73,13 +73,13 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   // 1. 실시간 드래그 전파 (백엔드 /app 접두사 반영)
   const sendDragUpdate = useCallback(
     throttle((data: any) => {
-      sendMessage(`/app/game/rummikub/${roomId}/move`, data);
+      sendMessage(`/game/rummikub/${roomId}/move`, data);
     }, 80), [roomId, sendMessage]
   );
   
   const sendBatchDragUpdate = useCallback(
     throttle((updates: any[]) => {
-      sendMessage(`/app/game/rummikub/${roomId}/move-batch`, { updates });
+      sendMessage(`/game/rummikub/${roomId}/move-batch`, { updates });
     }, 80), [roomId, sendMessage]
   );
 
