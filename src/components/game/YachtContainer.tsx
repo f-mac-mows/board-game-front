@@ -17,7 +17,6 @@ import { useWebSocket } from "@/contexts/WebSocketContext";
 import { useSoundManager } from "@/contexts/SoundContext";
 
 export default function YachtGamePage({ gameId }: { gameId: string}) {
-    const { id } = useParams();
     const router = useRouter();
     const numericGameId = Number(gameId);
     const { user } = useUserStore();

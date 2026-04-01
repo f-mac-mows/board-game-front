@@ -48,8 +48,6 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000,
-            // 필요 시 디버깅용 (개발 단계에서만 사용)
-            // debug: (str) => console.log(str),
         });
 
         client.onConnect = () => {
