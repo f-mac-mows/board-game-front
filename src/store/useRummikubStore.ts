@@ -35,7 +35,7 @@ interface RummikubState {
   updateFromRemote: (data: RummikubSyncResponse) => void;
   moveTile: (tileId: number, x: number, y: number) => void;
   moveGroup: (setId: string, deltaX: number, deltaY: number) => void;
-  remoteMoveTile: (tileId: number, setId: number | string, x: number, y: number) => void;
+  remoteMoveTile: (tileId: number, setId: number | string, x: number, y: number, tileValue: string) => void;
   sortHand: (type: 'color' | 'number') => void;
   validateCurrentBoard: () => void;
 }
@@ -128,7 +128,11 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
       });
 
       return {
-        boardTiles: (data.table || []).map(t => ({ ...t, setId: String(t.setId) })),
+        boardTiles: (data.table || []).map(t => ({ 
+          ...t, 
+          setId: String(t.setId), 
+          isRemote: false
+        })),
         handTiles: nextHand,
         originalBoardIds: serverBoardIds,
         currentTurnNickname: data.currentTurn,
@@ -207,7 +211,8 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
                    target.color === 'JOKER' ? 'JOKER' : `${target.color}_${target.number}`,
         x: finalX,
         y: finalY,
-        setId: finalSetId
+        setId: finalSetId,
+        isRemote: false
       };
       
       setTimeout(() => get().validateCurrentBoard(), 0);
@@ -241,14 +246,33 @@ export const useRummikubStore = create<RummikubState>((set, get) => ({
     )
   })),
 
-  remoteMoveTile: (tileId, setId, x, y) => {
+  remoteMoveTile: (tileId, setId, x, y, tileValue) => {
+    // 내 턴일 때는 상대방의 move 이벤트를 무시 (충돌 방지)
     if (get().myNickname === get().currentTurnNickname) return;
 
-    set((state) => ({
-      boardTiles: state.boardTiles.map(t => 
-        t.tileId === tileId ? { ...t, setId: String(setId), x, y } : t
-      )
-    }));
+    set((state) => {
+      const exists = state.boardTiles.find(t => t.tileId === tileId);
+
+      if (!exists) {
+        // 🚩 [신규 추가] 내 보드에 없는 타일이 넘어오면 리스트에 추가합니다.
+        const newRemoteTile: RummikubBoardTile = {
+          tileId,
+          tileValue: tileValue || "", // 서버에서 보내준 RED_5 등의 값
+          x,
+          y,
+          setId: String(setId),
+          isRemote: true // 🚩 중요: 내가 낸 게 아님을 표시
+        };
+        return { boardTiles: [...state.boardTiles, newRemoteTile] };
+      }
+
+      // [기존 업데이트] 이미 보드에 있는 타일이면 위치만 수정합니다.
+      return {
+        boardTiles: state.boardTiles.map(t => 
+          t.tileId === tileId ? { ...t, setId: String(setId), x, y } : t
+        )
+      };
+    });
   },
 
   sortHand: (type) => {

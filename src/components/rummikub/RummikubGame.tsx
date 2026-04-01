@@ -101,7 +101,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
       const targetHandTile = handTiles.find(t => t.id === tileId);
 
       // 🚩 2. tileValue 결정 로직
-      let tileValue = "";
+      var tileValue = "";
       if (targetBoardTile) {
         // 이미 보드에 있는 타일은 tileValue를 그대로 사용
         tileValue = targetBoardTile.tileValue;
@@ -194,9 +194,9 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
       default:
         if (event.nickname && event.nickname !== userNicknameRef.current) {
           if (event.tileId) {
-            remoteMoveTile(event.tileId, String(event.setId), event.x, event.y);
+            remoteMoveTile(event.tileId, String(event.setId), event.x, event.y, event.tileValue);
           } else if (event.updates) {
-            event.updates.forEach((u: any) => remoteMoveTile(u.tileId, String(u.setId), u.toX, u.toY));
+            event.updates.forEach((u: any) => remoteMoveTile(u.tileId, String(u.setId), u.toX, u.toY, u.tileValue));
           }
         }
     }
@@ -234,12 +234,14 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
     if (isProcessing || !isMyTurn) return;
     
     const { boardTiles, handTiles } = useRummikubStore.getState();
+    const myActionTiles = boardTiles.filter(t => !t.isRemote);
+
     const assignedTiles: any[] = [];
     const visited = new Set<number>();
     let currentSetId = 1;
 
     // 클라이언트 사이드 인접 타일 그룹핑 로직
-    boardTiles.forEach((startTile) => {
+    myActionTiles.forEach((startTile) => {
       if (visited.has(startTile.tileId)) return;
       const group: any[] = [];
       const queue = [startTile];
@@ -314,7 +316,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
                 tile={{ 
                   tileId: tile.id, 
                   tileValue: tile.color === 'JOKER' ? 'JOKER' : `${tile.color}_${tile.number}`, 
-                  x: tile.x, y: tile.y, setId: "0" 
+                  x: tile.x, y: tile.y, setId: "0" , isRemote: false
                 }}
                 disabled={!canInteract}
               />
