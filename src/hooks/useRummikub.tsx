@@ -81,8 +81,6 @@ export function useRummikubActions(roomId: number) {
     return {
         submitTurn, 
         drawTile,
-        moveTileApi: (data: TileMoveRequest) => rummikubApi.move(roomId, data),
-        moveBatchApi: (updates: TileMoveRequest[]) => rummikubApi.moveBatch(roomId, updates),
         syncGame
     };
 }

@@ -53,6 +53,7 @@ export interface RummikubResultResponse {
 // 5. 드래그 및 이동 요청
 export interface TileMoveRequest {
     tileId: number;
+    tileValue: string;
     toX: number;
     toY: number;
     setId: number;

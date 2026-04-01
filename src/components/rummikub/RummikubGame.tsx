@@ -21,7 +21,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   const numericRoomId = Number(roomId);
   const { user } = useUserStore();
   const { subscribe, isConnected, sendMessage } = useWebSocket();
-  const { submitTurn, drawTile, moveTileApi, moveBatchApi, syncGame } = useRummikubActions(numericRoomId);
+  const { submitTurn, drawTile, syncGame } = useRummikubActions(numericRoomId);
 
   const { 
     boardTiles, handTiles, moveTile, moveGroup, updateFromRemote, remoteMoveTile,
@@ -65,17 +65,18 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
     };
   }, []);
 
+  
+  useEffect(() => {
+    userNicknameRef.current = user?.nickname;
+  }, [user?.nickname]);
+  
   // 1. 실시간 드래그 전파 (백엔드 /app 접두사 반영)
   const sendDragUpdate = useCallback(
     throttle((data: any) => {
       sendMessage(`/app/game/rummikub/${roomId}/move`, data);
     }, 80), [roomId, sendMessage]
   );
-
-  useEffect(() => {
-    userNicknameRef.current = user?.nickname;
-  }, [user?.nickname]);
-
+  
   const sendBatchDragUpdate = useCallback(
     throttle((updates: any[]) => {
       sendMessage(`/app/game/rummikub/${roomId}/move-batch`, { updates });
@@ -85,29 +86,52 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   // 2. 드래그 중 실시간 핸들러
   const handleDragMove = (e: DragMoveEvent) => {
     if (!canInteract) return;
-    const { active, delta } = e;
+    const { active, delta, over } = e;
     const dragData = active.data.current;
     if (!dragData) return;
 
-    const tileId = Number(active.id.toString().replace('tile-', ''));
+    const isOverBoard = over?.id === "game-board-area";
 
-    if (dragData.type === 'group' && dragData.setId) {
-      const updates = boardTiles
-        .filter(t => t.setId === dragData.setId)
-        .map(t => ({
-          tileId: t.tileId,
-          toX: t.x + delta.x,
-          toY: t.y + delta.y,
-          setId: t.setId.startsWith('temp') ? 0 : Number(t.setId)
-        }));
-      sendBatchDragUpdate(updates);
-    } else {
-      sendDragUpdate({
-        tileId: tileId,
-        toX: dragData.x + delta.x,
-        toY: dragData.y + delta.y,
-        setId: String(dragData.setId).startsWith('temp') ? 0 : Number(dragData.setId || 0)
-      });
+    if (isOverBoard) {
+      const tileId = Number(active.id.toString().replace('tile-', ''));
+      
+      // 🚩 1. 스토어에서 해당 타일 찾기 (보드 혹은 손패)
+      const { boardTiles, handTiles } = useRummikubStore.getState();
+      const targetBoardTile = boardTiles.find(t => t.tileId === tileId);
+      const targetHandTile = handTiles.find(t => t.id === tileId);
+
+      // 🚩 2. tileValue 결정 로직
+      let tileValue = "";
+      if (targetBoardTile) {
+        // 이미 보드에 있는 타일은 tileValue를 그대로 사용
+        tileValue = targetBoardTile.tileValue;
+      } else if (targetHandTile) {
+        // 내 손에서 처음 나가는 타일은 color와 number를 조합해서 생성
+        tileValue = targetHandTile.color === 'JOKER' 
+          ? 'JOKER' 
+          : `${targetHandTile.color}_${targetHandTile.number}`;
+      }
+
+      if (dragData.type === 'group' && dragData.setId) {
+        const updates = boardTiles
+          .filter(t => t.setId === dragData.setId)
+          .map(t => ({
+            tileId: t.tileId,
+            tileValue: t.tileValue, // 그룹 이동은 항상 보드 타일이므로 그대로 사용
+            toX: t.x + delta.x,
+            toY: t.y + delta.y,
+            setId: t.setId.startsWith('temp') ? 0 : Number(t.setId)
+          }));
+        sendBatchDragUpdate(updates);
+      } else {
+        sendDragUpdate({
+          tileId: tileId,
+          tileValue: tileValue, // 🚩 찾은 값 전송
+          toX: dragData.x + delta.x,
+          toY: dragData.y + delta.y,
+          setId: String(dragData.setId).startsWith('temp') ? 0 : Number(dragData.setId || 0)
+        });
+      }
     }
   };
 
@@ -127,7 +151,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
         const finalUpdates = useRummikubStore.getState().boardTiles
           .filter(t => t.setId === dragData.setId)
           .map(t => ({ tileId: t.tileId, toX: t.x, toY: t.y, setId: Number(t.setId) }));
-        if (finalUpdates.length > 0) moveBatchApi(finalUpdates);
+        sendBatchDragUpdate(finalUpdates);
       }, 0);
     } else {
       moveTile(tileId, dragData.x + delta.x, dragData.y + delta.y);
@@ -135,7 +159,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
         setTimeout(() => {
           const finalTile = useRummikubStore.getState().boardTiles.find(t => t.tileId === tileId);
           if (finalTile) {
-            moveTileApi({
+            sendDragUpdate({
               tileId: finalTile.tileId,
               toX: finalTile.x,
               toY: finalTile.y,

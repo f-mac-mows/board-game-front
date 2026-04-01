@@ -22,20 +22,9 @@ export const rummikubApi = {
     sync: (roomId: number) =>
         api.get<r.RummikubSyncResponse>(`/game/rummikub/${roomId}/sync`),
 
-    /**
-     * 4. 단일 타일 이동 기록 (휘발성/전파용)
-     */
-    move: (roomId: number, data: r.TileMoveRequest) =>
-        api.post(`/game/rummikub/${roomId}/move`, data),
 
     /**
-     * 5. 배치 타일 이동 기록 (그룹 이동)
-     */
-    moveBatch: (roomId: number, updates: r.TileMoveRequest[]) =>
-        api.post(`/game/rummikub/${roomId}/move-batch`, { updates }),
-
-    /**
-     * 6. 복기용 로그 조회
+     * 4. 복기용 로그 조회
      */
     getReplay: (gameId: number) =>
         api.get<r.RummikubGameLogResponse[]>(`/v1/logs/rummikub/${gameId}/replay`),
