@@ -93,7 +93,7 @@ export interface RummikubBoardTile {
     x: number;
     y: number;
     setId: string; // UI에서는 string
-    isRemote: boolean;
+    isRemote?: boolean;
 }
 
 // 손패 타일
