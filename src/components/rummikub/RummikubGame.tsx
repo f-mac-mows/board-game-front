@@ -73,66 +73,51 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
   // 1. 실시간 드래그 전파 (백엔드 /app 접두사 반영)
   const sendDragUpdate = useCallback(
     throttle((data: any) => {
-      sendMessage(`/game/rummikub/${roomId}/move`, data);
+      sendMessage(`/app/game/rummikub/${roomId}/move`, data);
     }, 80), [roomId, sendMessage]
   );
   
   const sendBatchDragUpdate = useCallback(
     throttle((updates: any[]) => {
-      sendMessage(`/game/rummikub/${roomId}/move-batch`, { updates });
+      sendMessage(`/app/game/rummikub/${roomId}/move-batch`, { updates });
     }, 80), [roomId, sendMessage]
   );
 
   // 2. 드래그 중 실시간 핸들러
   const handleDragMove = (e: DragMoveEvent) => {
     if (!canInteract) return;
-    const { active, delta, over } = e;
+    const { active, delta } = e;
     const dragData = active.data.current;
     if (!dragData) return;
 
-    const isOverBoard = over?.id === "game-board-area";
-
-    if (isOverBoard) {
-      const tileId = Number(active.id.toString().replace('tile-', ''));
+    const tileId = Number(active.id.toString().replace('tile-', ''));
+    
+    // 🚩 [방어 로직] dragData에 값이 없으면 스토어를 뒤져서라도 찾아냅니다.
+    let currentTileValue = dragData.tileValue;
+    
+    if (!currentTileValue) {
+      const state = useRummikubStore.getState();
+      // 보드 타일에서 찾거나, 손패 타일에서 찾아서 조합
+      const foundBoard = state.boardTiles.find(t => t.tileId === tileId);
+      const foundHand = state.handTiles.find(t => t.id === tileId);
       
-      // 🚩 1. 스토어에서 해당 타일 찾기 (보드 혹은 손패)
-      const { boardTiles, handTiles } = useRummikubStore.getState();
-      const targetBoardTile = boardTiles.find(t => t.tileId === tileId);
-      const targetHandTile = handTiles.find(t => t.id === tileId);
-
-      // 🚩 2. tileValue 결정 로직
-      var tileValue = "";
-      if (targetBoardTile) {
-        // 이미 보드에 있는 타일은 tileValue를 그대로 사용
-        tileValue = targetBoardTile.tileValue;
-      } else if (targetHandTile) {
-        // 내 손에서 처음 나가는 타일은 color와 number를 조합해서 생성
-        tileValue = targetHandTile.color === 'JOKER' 
-          ? 'JOKER' 
-          : `${targetHandTile.color}_${targetHandTile.number}`;
-      }
-
-      if (dragData.type === 'group' && dragData.setId) {
-        const updates = boardTiles
-          .filter(t => t.setId === dragData.setId)
-          .map(t => ({
-            tileId: t.tileId,
-            tileValue: t.tileValue, // 그룹 이동은 항상 보드 타일이므로 그대로 사용
-            toX: t.x + delta.x,
-            toY: t.y + delta.y,
-            setId: t.setId.startsWith('temp') ? 0 : Number(t.setId)
-          }));
-        sendBatchDragUpdate(updates);
-      } else {
-        sendDragUpdate({
-          tileId: tileId,
-          tileValue: tileValue, // 🚩 찾은 값 전송
-          toX: dragData.x + delta.x,
-          toY: dragData.y + delta.y,
-          setId: String(dragData.setId).startsWith('temp') ? 0 : Number(dragData.setId || 0)
-        });
+      if (foundBoard) {
+        currentTileValue = foundBoard.tileValue;
+      } else if (foundHand) {
+        currentTileValue = foundHand.color === 'JOKER' ? 'JOKER' : `${foundHand.color}_${foundHand.number}`;
       }
     }
+
+    // 🚩 만약 여전히 값이 없다면 전송을 차단해서 404 에러(Axios Fallback)를 막습니다.
+    if (!currentTileValue) return;
+
+    sendDragUpdate({
+      tileId,
+      tileValue: currentTileValue, // 🚩 null이 아닌 값을 강제로 주입
+      toX: dragData.x + delta.x,
+      toY: dragData.y + delta.y,
+      setId: String(dragData.setId || 0).startsWith('temp') ? 0 : Number(dragData.setId || 0)
+    });
   };
 
   // 3. 드래그 종료 핸들러 (최종 좌표 확정)
@@ -161,6 +146,7 @@ export default function RummikubGame({ roomId }: { roomId: string }) {
           if (finalTile) {
             sendDragUpdate({
               tileId: finalTile.tileId,
+              tileValue: finalTile.tileValue,
               toX: finalTile.x,
               toY: finalTile.y,
               setId: finalTile.setId.startsWith('temp') ? 0 : Number(finalTile.setId)

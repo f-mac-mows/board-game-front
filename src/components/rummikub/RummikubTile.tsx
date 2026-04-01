@@ -31,6 +31,7 @@ const RummikubTile = ({ tile, disabled = false }: Props) => {
     data: { 
         type: 'individual', 
         tileId: tile.tileId, 
+        tileValue: tile.tileValue,
         setId: tile.setId, 
         x: tile.x, 
         y: tile.y 
